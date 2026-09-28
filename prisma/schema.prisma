@@ -1,0 +1,139 @@
+// Prisma schema — PostgreSQL (Neon / Supabase)
+// Run `npx prisma db push` after setting DATABASE_URL and DIRECT_URL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection — used by the app at runtime
+  directUrl = env("DIRECT_URL")   // direct connection — used by `prisma db push` / migrations
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum Currency {
+  USD
+  PKR
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices  Invoice[]
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  company     String?
+  email       String?
+  phone       String?
+  address     String?  @db.Text
+  city        String?
+  country     String?
+  taxNumber   String?
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoices    Invoice[]
+
+  @@index([name])
+  @@index([email])
+}
+
+model CompanySettings {
+  id           String   @id @default(cuid())
+  companyName  String   @default("Your Company")
+  address      String?  @db.Text
+  phone        String?
+  email        String?
+  website      String?
+  taxNumber    String?
+  logoUrl      String?
+  invoicePrefix String  @default("INV")
+  // running counter used to build the next invoice number
+  nextNumber   Int      @default(1)
+  defaultCurrency Currency @default(PKR)
+  bankDetails  String?  @db.Text
+  footerNote   String?  @db.Text
+  updatedAt    DateTime @updatedAt
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique
+  invoiceDate    DateTime      @default(now())
+  dueDate        DateTime?
+
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+
+  createdById    String?
+  createdBy      User?         @relation(fields: [createdById], references: [id])
+
+  // shipment details
+  originPort     String?
+  destinationPort String?
+  shipmentMode   String?      // Air / Sea / Road
+  containerNo    String?
+  trackingNo     String?
+  weight         String?
+  shippingDate   DateTime?
+
+  currency       Currency      @default(PKR)
+  exchangeRate   Decimal?      @db.Decimal(12, 4) // e.g. PKR per USD, for reference on the invoice
+
+  status         InvoiceStatus @default(DRAFT)
+
+  subtotal       Decimal       @db.Decimal(14, 2) @default(0)
+  discount       Decimal       @db.Decimal(14, 2) @default(0)
+  taxPercent     Decimal       @db.Decimal(6, 2) @default(0)
+  taxAmount      Decimal       @db.Decimal(14, 2) @default(0)
+  total          Decimal       @db.Decimal(14, 2) @default(0)
+  amountPaid     Decimal       @db.Decimal(14, 2) @default(0)
+
+  notes          String?       @db.Text
+  terms          String?       @db.Text
+
+  items          InvoiceItem[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([invoiceNumber])
+  @@index([customerId])
+  @@index([invoiceDate])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Decimal  @db.Decimal(12, 2) @default(1)
+  unitPrice   Decimal  @db.Decimal(14, 2) @default(0)
+  amount      Decimal  @db.Decimal(14, 2) @default(0)
+  sortOrder   Int      @default(0)
+}
