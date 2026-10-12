@@ -100,14 +100,55 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", gap: 20, alignItems: "start" }} className="dash-grid">
-        <div className="card card-pad">
-          <h3 style={{ fontSize: 15, marginBottom: 16 }}>Contact details</h3>
-          <DetailRow icon={<IconMail size={15} />} label="Email" value={customer.email} />
-          <DetailRow icon={<IconPhone size={15} />} label="Phone" value={customer.phone} />
-          <DetailRow icon={<IconMapPin size={15} />} label="Address" value={[customer.address, [customer.city, customer.country].filter(Boolean).join(", ")].filter(Boolean).join("\n")} />
-          <DetailRow icon={<IconBuilding size={15} />} label="Tax / NTN" value={customer.taxNumber} />
-          <DetailRow icon={<IconFileText size={15} />} label="Notes" value={customer.notes} />
+      <div style={{ display: "grid", gridTemplateColumns: "360px minmax(0, 1fr)", gap: 20, alignItems: "start" }} className="dash-grid">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Tax & Legal Profile */}
+          <div className="card card-pad">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <h3 style={{ fontSize: 14.5, margin: 0 }}>Tax &amp; Legal Info</h3>
+              {customer.customerType && (
+                <span className="badge" style={{ background: "var(--brand-soft)", color: "var(--brand)", fontSize: 11 }}>
+                  {customer.customerType}
+                </span>
+              )}
+            </div>
+            <DetailRow icon={<IconBuilding size={15} />} label="NTN (Tax No)" value={customer.taxNumber} highlight />
+            <DetailRow icon={<IconFileText size={15} />} label="STRN (Sales Tax)" value={customer.strn} />
+            <DetailRow icon={<IconBuilding size={15} />} label="CNIC No" value={customer.cnic} />
+          </div>
+
+          {/* Contact Details */}
+          <div className="card card-pad">
+            <h3 style={{ fontSize: 14.5, marginBottom: 14 }}>Contact Details</h3>
+            <DetailRow icon={<IconMail size={15} />} label="Email" value={customer.email} />
+            <DetailRow icon={<IconPhone size={15} />} label="Phone / WhatsApp" value={customer.phone} />
+            <DetailRow
+              icon={<IconMapPin size={15} />}
+              label="Billing Address"
+              value={[
+                customer.address,
+                [customer.city, customer.state, customer.postalCode].filter(Boolean).join(", "),
+                customer.country,
+              ]
+                .filter(Boolean)
+                .join("\n")}
+            />
+            {customer.shippingAddress && (
+              <DetailRow
+                icon={<IconMapPin size={15} />}
+                label="Shipping / Delivery Address"
+                value={customer.shippingAddress}
+              />
+            )}
+          </div>
+
+          {/* Invoicing Preferences */}
+          <div className="card card-pad">
+            <h3 style={{ fontSize: 14.5, marginBottom: 14 }}>Invoicing Preferences</h3>
+            <DetailRow icon={<IconBuilding size={15} />} label="Default Payment Terms" value={customer.defaultPaymentTerms || "Net 30"} />
+            <DetailRow icon={<IconBuilding size={15} />} label="Preferred Currency" value={customer.preferredCurrency || "PKR"} />
+            {customer.notes && <DetailRow icon={<IconFileText size={15} />} label="Internal Notes" value={customer.notes} />}
+          </div>
         </div>
 
         <div className="card">
@@ -164,15 +205,46 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
+function DetailRow({
+  icon,
+  label,
+  value,
+  highlight = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | null;
+  highlight?: boolean;
+}) {
   return (
     <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
-      <span style={{ width: 30, height: 30, borderRadius: 8, background: "var(--paper-sunken)", color: "var(--muted)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+      <span
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 8,
+          background: highlight ? "var(--brand-soft)" : "var(--paper-sunken)",
+          color: highlight ? "var(--brand)" : "var(--muted)",
+          display: "grid",
+          placeItems: "center",
+          flexShrink: 0,
+        }}
+      >
         {icon}
       </span>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 13.5, whiteSpace: "pre-line", wordBreak: "break-word" }}>{value || "—"}</div>
+        <div
+          style={{
+            fontSize: 13.5,
+            whiteSpace: "pre-line",
+            wordBreak: "break-word",
+            fontWeight: highlight && value ? 600 : 400,
+            color: highlight && value ? "var(--ink)" : undefined,
+          }}
+        >
+          {value || <span style={{ color: "var(--muted)" }}>—</span>}
+        </div>
       </div>
     </div>
   );

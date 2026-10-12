@@ -5,55 +5,111 @@ export type SampleTemplate = {
   key: string;
   title: string;
   subtitle: string;
+  billNo?: string;
   mode: "Sea" | "Air" | "Road" | "";
-  // picks the first customer whose name/company contains one of these words
   customerHints: string[];
   currency: "USD" | "PKR";
+  foreignCurrency: "EUR" | "USD";
   exchangeRate: number | null;
   status: string;
   dueInDays: number;
   shippedDaysAgo: number;
+  shipper: string;
+  consignee: string;
   originPort: string;
   destinationPort: string;
-  containerNo: string;
-  trackingNo: string;
-  weight: string;
+  masterAwb?: string;
+  houseAwb?: string;
+  hblNo?: string;
+  mblNo?: string;
+  containerNo?: string;
+  vesselName?: string;
+  packages: string;
+  chargeableWeight: string;
+  grossWeight: string;
+  cbm: string;
   discount: number;
   taxPercent: number;
   amountPaid: number;
   notes: string;
   terms: string;
-  items: { description: string; quantity: number; unitPrice: number }[];
+  items: {
+    description: string;
+    rate?: number;
+    foreignAmount?: number;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }[];
 };
 
 export const SAMPLE_TEMPLATES: SampleTemplate[] = [
   {
-    key: "sea-fcl",
-    title: "Sea freight · FCL export",
-    subtitle: "Karachi → Jebel Ali, 2 × 40' HC, USD",
-    mode: "Sea",
-    customerHints: ["Al Noor", "Dubai", "Trading"],
-    currency: "USD",
-    exchangeRate: 278.5,
+    key: "air-nova",
+    title: "Air Freight (AF-7860256)",
+    subtitle: "FERIHEGY (BUD) → KARACHI (KHI) · EUR / PKR",
+    billNo: "AF-7860256",
+    mode: "Air",
+    customerHints: ["Nova", "Leathers", "Omar", "Siddiqui"],
+    currency: "PKR",
+    foreignCurrency: "EUR",
+    exchangeRate: 326.0,
     status: "SENT",
-    dueInDays: 30,
-    shippedDaysAgo: 2,
-    originPort: "Karachi (PKKHI)",
-    destinationPort: "Jebel Ali (AEJEA)",
-    containerNo: "MSCU 482913-7, MSCU 482956-2",
-    trackingNo: "MEDUKH2409183",
-    weight: "38,400 kg",
-    discount: 50,
+    dueInDays: 7,
+    shippedDaysAgo: 55,
+    shipper: "HELSA KONFEKCIOIPARI KFT",
+    consignee: "NOVA LEATHERS (PVT) LTD.\nPLOT 30, SECTOR 15, KORANGI\nINDUSTRIAL AREA. KARACHI PAKISTAN",
+    originPort: "FERIHEGY (BUD)",
+    destinationPort: "KARACHI (KHI)",
+    masterAwb: "176-61185283",
+    houseAwb: "SAE26080119",
+    packages: "32",
+    chargeableWeight: "627",
+    grossWeight: "160",
+    cbm: "",
+    discount: 0,
     taxPercent: 0,
     amountPaid: 0,
-    notes: "2 × 40' High Cube containers — textiles (HS 6302). Vessel MSC AURORA V.428W.",
-    terms: "Payment due within 30 days. Late payments attract 1.5% monthly surcharge. Freight rates valid for this shipment only.",
+    notes: "",
+    terms: "1. If any Discrepancy in this invoice must be notified within 7 days to us, from the date of receipt, after that no claim shall be entertained.\n2. Kindly clear your payments within approved credit days to avoid finical charges.\n3. Cheque, Pay order or Demand Draft must in Favor of \"Sky logistics Solutions\".",
     items: [
-      { description: "Ocean Freight — 40' HC container", quantity: 2, unitPrice: 1225 },
-      { description: "Terminal Handling Charges (THC)", quantity: 2, unitPrice: 155 },
-      { description: "Bill of Lading Fee", quantity: 1, unitPrice: 75 },
-      { description: "Export Customs Clearance", quantity: 1, unitPrice: 185 },
-      { description: "Cargo Insurance (0.3% of CIF)", quantity: 1, unitPrice: 120 },
+      { description: "AIR FREIGHT", rate: 3.75, foreignAmount: 2351.25, quantity: 1, unitPrice: 766507.5, amount: 766507.5 },
+      { description: "DO FEE", rate: 10500.0, foreignAmount: undefined, quantity: 1, unitPrice: 10500.0, amount: 10500.0 },
+      { description: "ExWork", rate: 355.0, foreignAmount: 355.0, quantity: 1, unitPrice: 115730.0, amount: 115730.0 },
+    ],
+  },
+  {
+    key: "sea-autobio",
+    title: "Sea Freight (SF-7860259)",
+    subtitle: "SHANGHAI (CNSHA) → KARACHI (KHI) · USD / PKR",
+    billNo: "SF-7860259",
+    mode: "Sea",
+    customerHints: ["Sure Bio", "Diagnostics", "Pharmaceuticals", "Becker", "Qureshi"],
+    currency: "PKR",
+    foreignCurrency: "USD",
+    exchangeRate: 278.5,
+    status: "SENT",
+    dueInDays: 7,
+    shippedDaysAgo: 20,
+    shipper: "AUTOBIO DIAGNOSTICS CO. LTD",
+    consignee: "SURE BIO DIAGNOSTICS\nPHARMACEUTICALS\nSEE 10 DEFENCE VIEW PHASE 2",
+    originPort: "SHANGHAI (CNSHA)",
+    destinationPort: "KARACHI (KHI)",
+    hblNo: "4/PKAR26082050",
+    packages: "4",
+    chargeableWeight: "",
+    grossWeight: "596",
+    cbm: "4.22",
+    discount: 0,
+    taxPercent: 0,
+    amountPaid: 0,
+    notes: "",
+    terms: "1. If any Discrepancy in this invoice must be notified within 7 days to us, from the date of receipt, after that no claim shall be entertained.\n2. Kindly clear your payments within approved credit days to avoid finical charges.\n3. Cheque, Pay order or Demand Draft must in Favor of \"Sky logistics Solutions\".",
+    items: [
+      { description: "ALL IN CHARGES", rate: 1200.0, foreignAmount: 1200.0, quantity: 1, unitPrice: 334200.0, amount: 334200.0 },
+      { description: "DO FEE", rate: 10500.0, foreignAmount: undefined, quantity: 1, unitPrice: 10500.0, amount: 10500.0 },
+      { description: "THC", rate: 483.0, foreignAmount: undefined, quantity: 1, unitPrice: 2038.66, amount: 2038.66 },
+      { description: "DG DESTINATION CHARGES", rate: 5500.0, foreignAmount: undefined, quantity: 1, unitPrice: 5500.0, amount: 5500.0 },
     ],
   },
   {

@@ -21,6 +21,9 @@ export default async function CustomersPage({
             { company: { contains: q, mode: "insensitive" } },
             { email: { contains: q, mode: "insensitive" } },
             { phone: { contains: q, mode: "insensitive" } },
+            { taxNumber: { contains: q, mode: "insensitive" } },
+            { strn: { contains: q, mode: "insensitive" } },
+            { cnic: { contains: q, mode: "insensitive" } },
           ],
         }
       : {},
@@ -83,7 +86,11 @@ export default async function CustomersPage({
                         <Avatar name={c.company || c.name} />
                         <div>
                           <b>{c.company || c.name}</b>
-                          <div className="sub">{c.company ? c.name : "Individual"}</div>
+                          <div className="sub">
+                            {[c.company ? c.name : c.customerType || "Individual", c.taxNumber ? `NTN: ${c.taxNumber}` : null]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
                         </div>
                       </Link>
                     </td>

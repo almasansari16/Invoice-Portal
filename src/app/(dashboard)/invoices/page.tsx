@@ -32,6 +32,9 @@ export default async function InvoicesPage({
         { customer: { company: { contains: q, mode: "insensitive" } } },
         { trackingNo: { contains: q, mode: "insensitive" } },
         { containerNo: { contains: q, mode: "insensitive" } },
+        { masterAwb: { contains: q, mode: "insensitive" } },
+        { houseAwb: { contains: q, mode: "insensitive" } },
+        { hblNo: { contains: q, mode: "insensitive" } },
       ],
     });
   }

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/utils";
-import { QUICK_CHARGES, SAMPLE_TEMPLATES, SampleTemplate } from "@/lib/sample-invoices";
+import { formatCurrency, numberToWordsRupees } from "@/lib/utils";
+import { SAMPLE_TEMPLATES, SampleTemplate } from "@/lib/sample-invoices";
 import { Avatar } from "@/components/ui";
 import {
   IconAlert,
@@ -25,39 +25,75 @@ type Customer = {
   id: string;
   name: string;
   company: string | null;
+  customerType?: string | null;
   email?: string | null;
+  phone?: string | null;
+  address?: string | null;
   city?: string | null;
+  state?: string | null;
   country?: string | null;
+  postalCode?: string | null;
+  shippingAddress?: string | null;
+  taxNumber?: string | null;
+  strn?: string | null;
+  cnic?: string | null;
+  defaultPaymentTerms?: string | null;
+  preferredCurrency?: "PKR" | "USD";
 };
 
-type LineItem = {
+export type FreightLineItem = {
   id: string;
   description: string;
+  rate?: number | string;
+  foreignAmount?: number | string;
   quantity: number;
   unitPrice: number;
+  amount: number; // in PKR
 };
 
-type InvoiceInitial = {
+export type InvoiceInitial = {
   id?: string;
+  invoiceNumber?: string;
   customerId?: string;
   invoiceDate?: string;
   dueDate?: string | null;
   currency?: "USD" | "PKR";
+  foreignCurrency?: string | null;
   exchangeRate?: number | null;
   status?: string;
+
+  // freight parties & routing
+  shipper?: string | null;
+  consignee?: string | null;
   originPort?: string | null;
   destinationPort?: string | null;
-  shipmentMode?: string | null;
+  shipmentMode?: string | null; // "Air" | "Sea" | "Road"
+
+  // air freight docs
+  masterAwb?: string | null;
+  houseAwb?: string | null;
+
+  // sea freight docs
+  hblNo?: string | null;
+  mblNo?: string | null;
   containerNo?: string | null;
+  vesselName?: string | null;
+
+  // cargo specs
+  packages?: string | null;
+  chargeableWeight?: string | null;
+  grossWeight?: string | null;
+  cbm?: string | null;
   trackingNo?: string | null;
   weight?: string | null;
   shippingDate?: string | null;
+
   discount?: number;
   taxPercent?: number;
   amountPaid?: number;
   notes?: string | null;
   terms?: string | null;
-  items?: LineItem[];
+  items?: any[];
 };
 
 let idCounter = 0;
@@ -81,6 +117,8 @@ const PAYMENT_TERMS = [
   { label: "Net 7", days: 7 },
   { label: "Net 15", days: 15 },
   { label: "Net 30", days: 30 },
+  { label: "Net 45", days: 45 },
+  { label: "Net 60", days: 60 },
 ];
 
 const STATUS_OPTIONS = [
@@ -90,6 +128,10 @@ const STATUS_OPTIONS = [
   { value: "OVERDUE", label: "Overdue" },
   { value: "CANCELLED", label: "Cancelled" },
 ];
+
+const DEFAULT_TERMS = `1. If any Discrepancy in this invoice must be notified within 7 days to us, from the date of receipt, after that no claim shall be entertained.
+2. Kindly clear your payments within approved credit days to avoid finical charges.
+3. Cheque, Pay order or Demand Draft must in Favor of "Sky logistics Solutions".`;
 
 export default function InvoiceForm({
   customers,
@@ -103,34 +145,80 @@ export default function InvoiceForm({
   const router = useRouter();
   const isEdit = Boolean(initial?.id);
 
+  const [invoiceNumber, setInvoiceNumber] = useState(initial?.invoiceNumber || "");
   const [customerId, setCustomerId] = useState(initial?.customerId || "");
   const [invoiceDate, setInvoiceDate] = useState(
     initial?.invoiceDate?.slice(0, 10) || isoDay(new Date())
   );
   const [dueDate, setDueDate] = useState(initial?.dueDate?.slice(0, 10) || "");
   const [currency, setCurrency] = useState<"USD" | "PKR">(initial?.currency || defaultCurrency);
-  const [exchangeRate, setExchangeRate] = useState(initial?.exchangeRate?.toString() || "");
+  const [foreignCurrency, setForeignCurrency] = useState<string>(initial?.foreignCurrency || "USD");
+  const [exchangeRate, setExchangeRate] = useState(initial?.exchangeRate?.toString() || "326.00");
   const [status, setStatus] = useState(initial?.status || "DRAFT");
 
-  const [originPort, setOriginPort] = useState(initial?.originPort || "");
-  const [destinationPort, setDestinationPort] = useState(initial?.destinationPort || "");
-  const [shipmentMode, setShipmentMode] = useState(initial?.shipmentMode || "");
-  const [containerNo, setContainerNo] = useState(initial?.containerNo || "");
-  const [trackingNo, setTrackingNo] = useState(initial?.trackingNo || "");
-  const [weight, setWeight] = useState(initial?.weight || "");
-  const [shippingDate, setShippingDate] = useState(initial?.shippingDate?.slice(0, 10) || "");
+  // Freight parties
+  const [shipper, setShipper] = useState(initial?.shipper || "");
+  const [consignee, setConsignee] = useState(initial?.consignee || "");
 
-  const [items, setItems] = useState<LineItem[]>(
+  // Routing & Mode
+  const [shipmentMode, setShipmentMode] = useState(initial?.shipmentMode || "Air");
+  const [originPort, setOriginPort] = useState(initial?.originPort || "");
+  const [destinationPort, setDestinationPort] = useState(initial?.destinationPort || "KARACHI (KHI)");
+
+  // Air Docs
+  const [masterAwb, setMasterAwb] = useState(initial?.masterAwb || "");
+  const [houseAwb, setHouseAwb] = useState(initial?.houseAwb || "");
+
+  // Sea Docs
+  const [hblNo, setHblNo] = useState(initial?.hblNo || "");
+  const [mblNo, setMblNo] = useState(initial?.mblNo || "");
+  const [containerNo, setContainerNo] = useState(initial?.containerNo || "");
+  const [vesselName, setVesselName] = useState(initial?.vesselName || "");
+
+  // Cargo Specs
+  const [packages, setPackages] = useState(initial?.packages || "");
+  const [chargeableWeight, setChargeableWeight] = useState(initial?.chargeableWeight || "");
+  const [grossWeight, setGrossWeight] = useState(initial?.grossWeight || "");
+  const [cbm, setCbm] = useState(initial?.cbm || "");
+
+  const [items, setItems] = useState<FreightLineItem[]>(
     initial?.items && initial.items.length > 0
-      ? initial.items.map((i) => ({ ...i, id: i.id || newId() }))
-      : [{ id: newId(), description: "", quantity: 1, unitPrice: 0 }]
+      ? initial.items.map((i) => ({
+          id: i.id || newId(),
+          description: i.description,
+          rate: i.rate ?? "",
+          foreignAmount: i.foreignAmount ?? "",
+          quantity: Number(i.quantity) || 1,
+          unitPrice: Number(i.unitPrice) || 0,
+          amount: Number(i.amount) || Number(i.unitPrice) || 0,
+        }))
+      : [
+          {
+            id: newId(),
+            description: "AIR FREIGHT",
+            rate: 3.75,
+            foreignAmount: 2351.25,
+            quantity: 1,
+            unitPrice: 766507.5,
+            amount: 766507.5,
+          },
+          {
+            id: newId(),
+            description: "DO FEE",
+            rate: 10500.0,
+            foreignAmount: "",
+            quantity: 1,
+            unitPrice: 10500.0,
+            amount: 10500.0,
+          },
+        ]
   );
 
   const [discount, setDiscount] = useState(initial?.discount || 0);
   const [taxPercent, setTaxPercent] = useState(initial?.taxPercent || 0);
   const [amountPaid, setAmountPaid] = useState(initial?.amountPaid || 0);
   const [notes, setNotes] = useState(initial?.notes || "");
-  const [terms, setTerms] = useState(initial?.terms || "");
+  const [terms, setTerms] = useState(initial?.terms || DEFAULT_TERMS);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -155,29 +243,48 @@ export default function InvoiceForm({
   }, []);
 
   const totals = useMemo(() => {
-    const subtotal = items.reduce((s, i) => s + (i.quantity || 0) * (i.unitPrice || 0), 0);
+    const subtotal = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
     const afterDiscount = Math.max(subtotal - (Number(discount) || 0), 0);
     const taxAmount = (afterDiscount * (Number(taxPercent) || 0)) / 100;
     const total = afterDiscount + taxAmount;
     const balance = total - (Number(amountPaid) || 0);
-    return { subtotal, afterDiscount, taxAmount, total, balance };
+    const words = numberToWordsRupees(total);
+    return { subtotal, afterDiscount, taxAmount, total, balance, words };
   }, [items, discount, taxPercent, amountPaid]);
 
-  const selectedTerm = dueDate
-    ? PAYMENT_TERMS.find((t) => addDays(invoiceDate, t.days) === dueDate)
-    : undefined;
+  function updateItem(id: string, patch: Partial<FreightLineItem>) {
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const updated = { ...i, ...patch };
 
-  function updateItem(id: string, patch: Partial<LineItem>) {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+        // Auto calculation if foreignAmount is edited and exchange rate exists
+        if ("foreignAmount" in patch && patch.foreignAmount !== "" && patch.foreignAmount !== undefined) {
+          const ex = parseFloat(exchangeRate) || 0;
+          const fa = parseFloat(String(patch.foreignAmount)) || 0;
+          if (ex > 0 && fa > 0) {
+            updated.amount = Math.round(fa * ex * 100) / 100;
+          }
+        }
+        return updated;
+      })
+    );
   }
-  function addItem(item?: Omit<LineItem, "id">) {
-    const row = { id: newId(), description: "", quantity: 1, unitPrice: 0, ...item };
-    setItems((prev) => {
-      // replace a single blank starter row instead of appending below it
-      if (item && prev.length === 1 && !prev[0].description.trim() && !prev[0].unitPrice) return [row];
-      return [...prev, row];
-    });
+
+  function addItem(item?: Partial<FreightLineItem>) {
+    const row: FreightLineItem = {
+      id: newId(),
+      description: "",
+      rate: "",
+      foreignAmount: "",
+      quantity: 1,
+      unitPrice: 0,
+      amount: 0,
+      ...item,
+    };
+    setItems((prev) => [...prev, row]);
   }
+
   function removeItem(id: string) {
     setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.id !== id) : prev));
   }
@@ -194,52 +301,78 @@ export default function InvoiceForm({
     const pick = hinted || customers.find((c) => c.id === customerId) || customers[0];
     if (pick) setCustomerId(pick.id);
 
+    if (t.billNo && !isEdit) setInvoiceNumber(t.billNo);
     setInvoiceDate(today);
     setDueDate(addDays(today, t.dueInDays));
     setCurrency(t.currency);
+    setForeignCurrency(t.foreignCurrency || "USD");
     setExchangeRate(t.exchangeRate ? String(t.exchangeRate) : "");
     setStatus(t.status);
     setShipmentMode(t.mode);
+    setShipper(t.shipper);
+    setConsignee(t.consignee);
     setOriginPort(t.originPort);
     setDestinationPort(t.destinationPort);
-    setContainerNo(t.containerNo);
-    setTrackingNo(t.trackingNo);
-    setWeight(t.weight);
-    setShippingDate(addDays(today, -t.shippedDaysAgo));
-    setItems(t.items.map((i) => ({ ...i, id: newId() })));
+    setMasterAwb(t.masterAwb || "");
+    setHouseAwb(t.houseAwb || "");
+    setHblNo(t.hblNo || "");
+    setMblNo(t.mblNo || "");
+    setContainerNo(t.containerNo || "");
+    setVesselName(t.vesselName || "");
+    setPackages(t.packages);
+    setChargeableWeight(t.chargeableWeight);
+    setGrossWeight(t.grossWeight);
+    setCbm(t.cbm);
+    setItems(
+      t.items.map((i) => ({
+        id: newId(),
+        description: i.description,
+        rate: i.rate ?? "",
+        foreignAmount: i.foreignAmount ?? "",
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        amount: i.amount,
+      }))
+    );
     setDiscount(t.discount);
     setTaxPercent(t.taxPercent);
     setAmountPaid(t.amountPaid);
     setNotes(t.notes);
     setTerms(t.terms);
     setError("");
-    setToast(
-      pick
-        ? `Loaded "${t.title}" for ${pick.company || pick.name}`
-        : `Loaded "${t.title}" — add a customer before saving`
-    );
+    setToast(`Loaded "${t.title}"`);
   }
 
   function resetForm() {
+    setInvoiceNumber("");
     setCustomerId("");
     setInvoiceDate(isoDay(new Date()));
     setDueDate("");
     setCurrency(defaultCurrency);
-    setExchangeRate("");
+    setForeignCurrency("USD");
+    setExchangeRate("326.00");
     setStatus("DRAFT");
-    setShipmentMode("");
+    setShipmentMode("Air");
+    setShipper("");
+    setConsignee("");
     setOriginPort("");
-    setDestinationPort("");
+    setDestinationPort("KARACHI (KHI)");
+    setMasterAwb("");
+    setHouseAwb("");
+    setHblNo("");
+    setMblNo("");
     setContainerNo("");
-    setTrackingNo("");
-    setWeight("");
-    setShippingDate("");
-    setItems([{ id: newId(), description: "", quantity: 1, unitPrice: 0 }]);
+    setVesselName("");
+    setPackages("");
+    setChargeableWeight("");
+    setGrossWeight("");
+    setCbm("");
+    setItems([{ id: newId(), description: "", rate: "", foreignAmount: "", quantity: 1, unitPrice: 0, amount: 0 }]);
     setDiscount(0);
     setTaxPercent(0);
     setAmountPaid(0);
     setNotes("");
-    setTerms("");
+    setTerms(DEFAULT_TERMS);
     setError("");
     setToast("Form cleared");
   }
@@ -249,41 +382,56 @@ export default function InvoiceForm({
     setError("");
 
     if (!customerId) {
-      setError("Please select a customer.");
+      setError("Please select a customer (Messers).");
       return;
     }
     const cleanItems = items
       .filter((i) => i.description.trim())
       .map((i) => ({
         description: i.description,
-        quantity: Number(i.quantity) || 0,
-        unitPrice: Number(i.unitPrice) || 0,
+        rate: i.rate !== "" && i.rate !== undefined ? Number(i.rate) : null,
+        foreignAmount: i.foreignAmount !== "" && i.foreignAmount !== undefined ? Number(i.foreignAmount) : null,
+        quantity: Number(i.quantity) || 1,
+        unitPrice: Number(i.amount) || Number(i.unitPrice) || 0,
+        amount: Number(i.amount) || 0,
       }));
+
     if (cleanItems.length === 0) {
       setError("Add at least one line item.");
-      return;
-    }
-    if (cleanItems.some((i) => i.quantity <= 0)) {
-      setError("Every line item needs a quantity greater than zero.");
       return;
     }
 
     setSaving(true);
 
     const payload = {
+      invoiceNumber: invoiceNumber.trim() || null,
       customerId,
       invoiceDate,
       dueDate: dueDate || null,
       currency,
+      foreignCurrency,
       exchangeRate: exchangeRate ? Number(exchangeRate) : null,
       status,
+
+      shipper: shipper || null,
+      consignee: consignee || null,
       originPort: originPort || null,
       destinationPort: destinationPort || null,
       shipmentMode: shipmentMode || null,
+
+      masterAwb: masterAwb || null,
+      houseAwb: houseAwb || null,
+
+      hblNo: hblNo || null,
+      mblNo: mblNo || null,
       containerNo: containerNo || null,
-      trackingNo: trackingNo || null,
-      weight: weight || null,
-      shippingDate: shippingDate || null,
+      vesselName: vesselName || null,
+
+      packages: packages || null,
+      chargeableWeight: chargeableWeight || null,
+      grossWeight: grossWeight || null,
+      cbm: cbm || null,
+
       discount: Number(discount) || 0,
       taxPercent: Number(taxPercent) || 0,
       amountPaid: Number(amountPaid) || 0,
@@ -301,10 +449,10 @@ export default function InvoiceForm({
       body: JSON.stringify(payload),
     });
 
-    setSaving(false);
-
     if (!res.ok) {
-      setError("Could not save invoice. Check the fields and try again.");
+      const errData = await res.json().catch(() => null);
+      const msg = typeof errData?.error === "string" ? errData.error : (errData?.error ? JSON.stringify(errData.error) : "Could not save invoice. Check the fields and try again.");
+      setError(msg);
       return;
     }
 
@@ -313,23 +461,52 @@ export default function InvoiceForm({
     router.refresh();
   }
 
+  function handleCustomerSelect(id: string) {
+    setCustomerId(id);
+    const selected = customers.find((c) => c.id === id);
+    if (selected) {
+      if (selected.preferredCurrency) {
+        setCurrency(selected.preferredCurrency as "PKR" | "USD");
+      }
+      if (selected.defaultPaymentTerms) {
+        const match = PAYMENT_TERMS.find(
+          (t) => t.label.toLowerCase() === selected.defaultPaymentTerms?.toLowerCase()
+        );
+        if (match) {
+          setDueDate(addDays(invoiceDate, match.days));
+        }
+      }
+      // auto set Consignee to customer company + address if consignee is empty
+      if (!consignee.trim()) {
+        const autoConsignee = [
+          selected.company || selected.name,
+          selected.address,
+          [selected.city, selected.country].filter(Boolean).join(" "),
+        ]
+          .filter(Boolean)
+          .join("\n");
+        setConsignee(autoConsignee);
+      }
+    }
+  }
+
   const modes = [
-    { value: "Sea", icon: <IconShip size={15} /> },
-    { value: "Air", icon: <IconPlane size={15} /> },
-    { value: "Road", icon: <IconTruck size={15} /> },
+    { value: "Air", label: "By Air", icon: <IconPlane size={15} /> },
+    { value: "Sea", label: "By Sea", icon: <IconShip size={15} /> },
+    { value: "Road", label: "By Road", icon: <IconTruck size={15} /> },
   ];
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* toolbar */}
+      {/* Sample presets toolbar */}
       <div className="card" style={{ padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <span className="stat-icon" style={{ background: "var(--brand-soft)", color: "var(--brand)" }}>
           <IconSparkles size={17} />
         </span>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5 }}>Start from a sample</div>
+          <div style={{ fontWeight: 600, fontSize: 13.5 }}>Sky Logistics Sample Invoices</div>
           <div className="muted" style={{ fontSize: 12.5 }}>
-            Pre-fill realistic freight data to try the flow, then tweak anything you like.
+            Load actual freight data from your samples (AF-7860256 By Air / SF-7860259 By Sea).
           </div>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={resetForm}>
@@ -337,7 +514,7 @@ export default function InvoiceForm({
         </button>
         <div className="menu-wrap" ref={menuRef}>
           <button type="button" className="btn btn-soft btn-sm" onClick={() => setMenuOpen((o) => !o)}>
-            <IconSparkles size={14} /> Fill sample data
+            <IconSparkles size={14} /> Load sample invoice
           </button>
           {menuOpen && (
             <div className="menu">
@@ -348,14 +525,10 @@ export default function InvoiceForm({
                     style={
                       t.mode === "Air"
                         ? { background: "#f0f9ff", color: "#0369a1" }
-                        : t.mode === "Road"
-                        ? { background: "#fff7ed", color: "#c2410c" }
-                        : t.key === "customs"
-                        ? { background: "#ecfdf5", color: "#047857" }
                         : { background: "#eef2ff", color: "#3b5bdb" }
                     }
                   >
-                    {t.mode === "Air" ? <IconPlane size={15} /> : t.mode === "Road" ? <IconTruck size={15} /> : t.key === "customs" ? <IconFileText size={15} /> : <IconShip size={15} />}
+                    {t.mode === "Air" ? <IconPlane size={15} /> : <IconShip size={15} />}
                   </span>
                   <span>
                     <b>{t.title}</b>
@@ -370,182 +543,285 @@ export default function InvoiceForm({
 
       <div className="form-layout">
         <div className="stack">
-          {/* bill to + dates */}
+          {/* SECTION 1: HEADER & BILL INFO */}
           <div className="card card-pad">
             <div className="section-title">
               <span className="icon-chip"><IconInvoice size={16} /></span>
               <div>
-                <h3>Invoice details</h3>
-                <p>Who you&apos;re billing and when payment is due</p>
+                <h3>Bill &amp; Shipment Info</h3>
+                <p>Bill No, date, transport type &amp; exchange rate</p>
               </div>
             </div>
-
-            <div className="field">
-              <label>Bill to<span className="req">*</span></label>
-              <select className="input" required value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-                <option value="">Select a customer…</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}{c.company ? ` — ${c.company}` : ""}
-                  </option>
-                ))}
-              </select>
-              {customers.length === 0 && (
-                <span className="hint">
-                  No customers yet. <Link href="/customers/new" className="link">Add a customer</Link> first.
-                </span>
-              )}
-            </div>
-
-            {customer && (
-              <div className="customer-peek">
-                <Avatar name={customer.name} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <b>{customer.company || customer.name}</b>
-                  <span>
-                    {[customer.company ? customer.name : null, customer.email, [customer.city, customer.country].filter(Boolean).join(", ")]
-                      .filter(Boolean)
-                      .join(" · ") || "No contact details"}
-                  </span>
-                </div>
-                <Link href={`/customers/${customer.id}`} className="btn btn-ghost btn-sm" target="_blank">
-                  View
-                </Link>
-              </div>
-            )}
 
             <div className="grid-2">
               <div className="field">
-                <label>Invoice date<span className="req">*</span></label>
+                <label>Bill No / Invoice No</label>
+                <input
+                  className="input mono"
+                  placeholder={shipmentMode === "Sea" ? "e.g. SF-7860259" : "e.g. AF-7860256"}
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label>Type / Mode of transport<span className="req">*</span></label>
+                <div className="segmented" style={{ alignSelf: "flex-start", width: "100%" }}>
+                  {modes.map((m) => (
+                    <button
+                      type="button"
+                      key={m.value}
+                      style={{ flex: 1 }}
+                      className={shipmentMode.toLowerCase() === m.value.toLowerCase() ? "on" : ""}
+                      onClick={() => {
+                        setShipmentMode(m.value);
+                        if (!invoiceNumber || invoiceNumber.startsWith("AF-") || invoiceNumber.startsWith("SF-")) {
+                          setInvoiceNumber(m.value === "Sea" ? "SF-" : "AF-");
+                        }
+                      }}
+                    >
+                      {m.icon} {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Date<span className="req">*</span></label>
                 <input className="input" type="date" required value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
               </div>
+
               <div className="field">
                 <label>Due date</label>
                 <input className="input" type="date" value={dueDate} min={invoiceDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
             </div>
-            <div className="field" style={{ marginTop: -4 }}>
-              <div className="chips">
-                {PAYMENT_TERMS.map((t) => (
-                  <button
-                    type="button"
-                    key={t.label}
-                    className="chip"
-                    style={selectedTerm?.label === t.label ? { borderStyle: "solid", borderColor: "var(--brand)", color: "var(--brand)", background: "var(--brand-soft)" } : undefined}
-                    onClick={() => setDueDate(addDays(invoiceDate, t.days))}
-                  >
-                    {selectedTerm?.label === t.label && <IconCheck size={12} />}
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            <div className="grid-2">
+            <div className="grid-2" style={{ marginTop: 10 }}>
               <div className="field">
-                <label>Currency<span className="req">*</span></label>
-                <div className="segmented" style={{ display: "flex" }}>
-                  {(["PKR", "USD"] as const).map((c) => (
-                    <button type="button" key={c} className={currency === c ? "on" : ""} style={{ flex: 1, justifyContent: "center" }} onClick={() => setCurrency(c)}>
-                      {c === "PKR" ? "Rs  PKR" : "$  USD"}
-                    </button>
-                  ))}
-                </div>
+                <label>Foreign Currency</label>
+                <select className="input" value={foreignCurrency} onChange={(e) => setForeignCurrency(e.target.value)}>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="AED">AED</option>
+                  <option value="CNY">CNY (¥)</option>
+                </select>
               </div>
+
               <div className="field">
-                <label>Exchange rate</label>
-                <div className="input-group">
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.0001"
-                    min={0}
-                    placeholder="e.g. 278.50"
-                    value={exchangeRate}
-                    onChange={(e) => setExchangeRate(e.target.value)}
-                    style={{ paddingRight: 90 }}
-                  />
-                  <span className="suffix">PKR / USD</span>
-                </div>
+                <label>Ex. Rate (PKR per {foreignCurrency})</label>
+                <input
+                  className="input num"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g. 326.00"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(e.target.value)}
+                />
               </div>
             </div>
           </div>
 
-          {/* shipment */}
+          {/* SECTION 2: MESSERS, SHIPPER & CONSIGNEE */}
           <div className="card card-pad">
             <div className="section-title">
               <span className="icon-chip"><IconPackage size={16} /></span>
               <div>
-                <h3>Shipment details</h3>
-                <p>Optional — printed on the invoice when filled in</p>
+                <h3>Messers, Shipper &amp; Consignee</h3>
+                <p>Parties printed in the left block of the invoice</p>
               </div>
             </div>
 
             <div className="field">
-              <label>Mode of transport</label>
-              <div className="segmented" style={{ alignSelf: "flex-start" }}>
-                {modes.map((m) => (
-                  <button
-                    type="button"
-                    key={m.value}
-                    className={shipmentMode === m.value ? "on" : ""}
-                    onClick={() => setShipmentMode(shipmentMode === m.value ? "" : m.value)}
-                  >
-                    {m.icon} {m.value}
-                  </button>
+              <label>Messers (Client / Billing Customer)<span className="req">*</span></label>
+              <select className="input" required value={customerId} onChange={(e) => handleCustomerSelect(e.target.value)}>
+                <option value="">Select client (Messers)…</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.company ? `${c.company} (${c.name})` : c.name}
+                    {c.taxNumber ? ` · NTN: ${c.taxNumber}` : ""}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
+
+            {customer && (
+              <div className="customer-peek" style={{ flexDirection: "column", alignItems: "stretch", gap: 10, padding: "12px 16px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Avatar name={customer.company || customer.name} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b style={{ fontSize: 14 }}>{customer.company || customer.name}</b>
+                    <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                      {[customer.address, [customer.city, customer.country].filter(Boolean).join(", ")]
+                        .filter(Boolean)
+                        .join(" — ")}
+                    </span>
+                  </div>
+                  <Link href={`/customers/${customer.id}`} className="btn btn-ghost btn-sm" target="_blank">
+                    View
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <div className="grid-2">
               <div className="field">
-                <label>Origin</label>
-                <input className="input" placeholder="e.g. Karachi (PKKHI)" value={originPort} onChange={(e) => setOriginPort(e.target.value)} />
+                <label>Shipper</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  placeholder="e.g. HELSA KONFEKCIOIPARI KFT"
+                  value={shipper}
+                  onChange={(e) => setShipper(e.target.value)}
+                />
               </div>
+
               <div className="field">
-                <label>Destination</label>
-                <input className="input" placeholder="e.g. Jebel Ali (AEJEA)" value={destinationPort} onChange={(e) => setDestinationPort(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Container no.</label>
-                <input className="input" placeholder="e.g. MSCU 482913-7" value={containerNo} onChange={(e) => setContainerNo(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Tracking / AWB / B/L no.</label>
-                <input className="input" placeholder="e.g. MEDUKH2409183" value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Weight</label>
-                <input className="input" placeholder="e.g. 240 kg" value={weight} onChange={(e) => setWeight(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Shipping date</label>
-                <input className="input" type="date" value={shippingDate} onChange={(e) => setShippingDate(e.target.value)} />
+                <label>Consignee</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  placeholder="e.g. NOVA LEATHERS (PVT) LTD.\nPLOT 30, SECTOR 15, KORANGI INDUSTRIAL AREA, KARACHI"
+                  value={consignee}
+                  onChange={(e) => setConsignee(e.target.value)}
+                />
               </div>
             </div>
           </div>
 
-          {/* line items */}
-          <div className="card">
-            <div className="card-pad" style={{ paddingBottom: 12 }}>
-              <div className="section-title" style={{ marginBottom: 12 }}>
-                <span className="icon-chip"><IconFileText size={16} /></span>
-                <div>
-                  <h3>Line items</h3>
-                  <p>Click a common charge to add it, or add a blank line</p>
+          {/* SECTION 3: FREIGHT DOCS & CARGO SPECS */}
+          <div className="card card-pad">
+            <div className="section-title">
+              <span className="icon-chip">
+                {shipmentMode.toLowerCase() === "sea" ? <IconShip size={16} /> : <IconPlane size={16} />}
+              </span>
+              <div>
+                <h3>{shipmentMode.toLowerCase() === "sea" ? "Sea Freight Details" : "Air Freight Details"}</h3>
+                <p>Routing, AWB / B/L documentation and cargo measurements</p>
+              </div>
+            </div>
+
+            {/* Air specific vs Sea specific docs */}
+            {shipmentMode.toLowerCase() === "air" ? (
+              <div className="grid-2">
+                <div className="field">
+                  <label>Master AWB</label>
+                  <input
+                    className="input mono"
+                    placeholder="e.g. 176-61185283"
+                    value={masterAwb}
+                    onChange={(e) => setMasterAwb(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>House AWB</label>
+                  <input
+                    className="input mono"
+                    placeholder="e.g. SAE26080119"
+                    value={houseAwb}
+                    onChange={(e) => setHouseAwb(e.target.value)}
+                  />
                 </div>
               </div>
-              <div className="chips">
-                {QUICK_CHARGES.map((c) => (
-                  <button
-                    type="button"
-                    key={c.label}
-                    className="chip"
-                    onClick={() => addItem({ description: c.label, quantity: 1, unitPrice: currency === "USD" ? c.usd : c.pkr })}
-                  >
-                    <IconPlus size={12} /> {c.label}
-                  </button>
-                ))}
+            ) : (
+              <div className="grid-2">
+                <div className="field">
+                  <label>HBL No</label>
+                  <input
+                    className="input mono"
+                    placeholder="e.g. 4/PKAR26082050"
+                    value={hblNo}
+                    onChange={(e) => setHblNo(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>MBL No / Container No</label>
+                  <input
+                    className="input mono"
+                    placeholder="e.g. MSCU 482913-7"
+                    value={containerNo}
+                    onChange={(e) => setContainerNo(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Routing */}
+            <div className="grid-2">
+              <div className="field">
+                <label>Origin</label>
+                <input
+                  className="input"
+                  placeholder="e.g. FERIHEGY (BUD) / SHANGHAI (CNSHA)"
+                  value={originPort}
+                  onChange={(e) => setOriginPort(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>Final Destination</label>
+                <input
+                  className="input"
+                  placeholder="e.g. KARACHI (KHI)"
+                  value={destinationPort}
+                  onChange={(e) => setDestinationPort(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Cargo Specs */}
+            <div className="grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14 }}>
+              <div className="field">
+                <label>Packages</label>
+                <input
+                  className="input num"
+                  placeholder="e.g. 32 / 4"
+                  value={packages}
+                  onChange={(e) => setPackages(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label>Chargeable Weight</label>
+                <input
+                  className="input num"
+                  placeholder="e.g. 627"
+                  value={chargeableWeight}
+                  onChange={(e) => setChargeableWeight(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label>Gross Weight</label>
+                <input
+                  className="input num"
+                  placeholder="e.g. 160 / 596"
+                  value={grossWeight}
+                  onChange={(e) => setGrossWeight(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label>CBM</label>
+                <input
+                  className="input num"
+                  placeholder="e.g. 4.22"
+                  value={cbm}
+                  onChange={(e) => setCbm(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 4: FREIGHT LINE ITEMS */}
+          <div className="card">
+            <div className="card-pad" style={{ paddingBottom: 12 }}>
+              <div className="section-title" style={{ marginBottom: 8 }}>
+                <span className="icon-chip"><IconFileText size={16} /></span>
+                <div>
+                  <h3>Description &amp; Charges Table</h3>
+                  <p>Line items with Foreign Currency (Rate &amp; Amount) and PKR conversion</p>
+                </div>
               </div>
             </div>
 
@@ -553,48 +829,57 @@ export default function InvoiceForm({
               <table className="data-table items-table">
                 <thead>
                   <tr>
-                    <th style={{ width: 28 }}>#</th>
+                    <th style={{ width: 32 }}>S.No</th>
                     <th>Description</th>
-                    <th style={{ width: 110 }}>Qty</th>
-                    <th style={{ width: 150 }}>Rate ({currency})</th>
-                    <th className="right" style={{ width: 150 }}>Amount</th>
-                    <th style={{ width: 44 }}></th>
+                    <th style={{ width: 110 }}>Rate</th>
+                    <th style={{ width: 140 }}>Amount ({foreignCurrency})</th>
+                    <th className="right" style={{ width: 160 }}>Amount (PKR)</th>
+                    <th style={{ width: 36 }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, idx) => (
                     <tr key={item.id}>
-                      <td className="rownum">{idx + 1}</td>
+                      <td className="rownum" style={{ fontWeight: 600 }}>{idx + 1}</td>
                       <td>
                         <input
                           className="input bare"
+                          style={{ fontWeight: 600 }}
                           value={item.description}
                           onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                          placeholder="Freight charges, handling, etc."
+                          placeholder="e.g. AIR FREIGHT / DO FEE / ALL IN CHARGES"
                         />
                       </td>
                       <td>
                         <input
                           className="input num"
                           type="number"
-                          min={0}
                           step="0.01"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                          placeholder="Rate"
+                          value={item.rate ?? ""}
+                          onChange={(e) => updateItem(item.id, { rate: e.target.value })}
                         />
                       </td>
                       <td>
                         <input
                           className="input num"
                           type="number"
-                          min={0}
                           step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                          placeholder={`${foreignCurrency} Amount`}
+                          value={item.foreignAmount ?? ""}
+                          onChange={(e) => updateItem(item.id, { foreignAmount: e.target.value })}
                         />
                       </td>
-                      <td className="right num" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                        {formatCurrency(item.quantity * item.unitPrice, currency)}
+                      <td>
+                        <input
+                          className="input num right"
+                          style={{ fontWeight: 700 }}
+                          type="number"
+                          step="0.01"
+                          placeholder="PKR Amount"
+                          value={item.amount ?? ""}
+                          onChange={(e) => updateItem(item.id, { amount: parseFloat(e.target.value) || 0 })}
+                        />
                       </td>
                       <td>
                         <button
@@ -612,41 +897,45 @@ export default function InvoiceForm({
                 </tbody>
               </table>
             </div>
-            <div style={{ padding: "12px 22px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--line-soft)" }}>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => addItem()}>
-                <IconPlus size={14} /> Add line
+
+            <div style={{ padding: "12px 20px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--line-soft)" }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => addItem({ description: "", rate: "", foreignAmount: "", quantity: 1, unitPrice: 0, amount: 0 })}
+              >
+                <IconPlus size={14} /> Add charge line
               </button>
               <span className="muted" style={{ fontSize: 13 }}>
-                {items.length} line{items.length === 1 ? "" : "s"} · Subtotal{" "}
-                <b className="num" style={{ color: "var(--ink)" }}>{formatCurrency(totals.subtotal, currency)}</b>
+                Total (PKR): <b className="num" style={{ color: "var(--ink)", fontSize: 15 }}>{formatCurrency(totals.total, "PKR")}</b>
               </span>
             </div>
           </div>
 
-          {/* notes */}
+          {/* SECTION 5: TERMS & CONDITIONS */}
           <div className="card card-pad">
             <div className="section-title">
               <span className="icon-chip"><IconFileText size={16} /></span>
               <div>
-                <h3>Notes &amp; terms</h3>
-                <p>Shown at the bottom of the invoice</p>
+                <h3>Terms &amp; Conditions</h3>
+                <p>Printed verbatim at the bottom of the invoice</p>
               </div>
             </div>
-            <div className="field">
-              <label>Notes to customer</label>
-              <textarea className="input" rows={3} placeholder="Cargo description, vessel/flight details, thank-you note…" value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </div>
             <div className="field" style={{ marginBottom: 0 }}>
-              <label>Terms &amp; conditions</label>
-              <textarea className="input" rows={3} placeholder="Payment terms, late fees, liability…" value={terms} onChange={(e) => setTerms(e.target.value)} />
+              <textarea
+                className="input"
+                rows={4}
+                value={terms}
+                onChange={(e) => setTerms(e.target.value)}
+              />
             </div>
           </div>
         </div>
 
-        {/* summary sidebar */}
+        {/* SUMMARY SIDEBAR */}
         <aside className="sticky" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div className="card card-pad">
-            <h3 style={{ fontSize: 15, marginBottom: 14 }}>Summary</h3>
+            <h3 style={{ fontSize: 15, marginBottom: 14 }}>Invoice Summary</h3>
 
             <div className="field">
               <label>Status</label>
@@ -657,44 +946,31 @@ export default function InvoiceForm({
               </select>
             </div>
 
-            <div className="grid-2">
-              <div className="field">
-                <label>Discount</label>
-                <div className="input-group">
-                  <input className="input num" type="number" min={0} step="0.01" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} style={{ paddingRight: 38 }} />
-                  <span className="suffix">{currency === "USD" ? "$" : "Rs"}</span>
-                </div>
-              </div>
-              <div className="field">
-                <label>Tax</label>
-                <div className="input-group">
-                  <input className="input num" type="number" min={0} step="0.01" value={taxPercent} onChange={(e) => setTaxPercent(parseFloat(e.target.value) || 0)} style={{ paddingRight: 30 }} />
-                  <span className="suffix">%</span>
-                </div>
+            <div className="summary-total" style={{ margin: "14px 0" }}>
+              <div className="lbl">Total (PKR)</div>
+              <div className="amt" style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totals.total, "PKR")}</div>
+            </div>
+
+            {/* IN WORDS DISPLAY */}
+            <div style={{ background: "var(--paper-sunken)", border: "1px solid var(--line-soft)", borderRadius: 8, padding: 12, marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" }}>IN WORDS</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginTop: 4, lineHeight: 1.4 }}>
+                {totals.words}
               </div>
             </div>
 
-            <div className="divider" style={{ marginTop: 2 }} />
-            <div className="kv"><span>Subtotal</span><span>{formatCurrency(totals.subtotal, currency)}</span></div>
-            {Number(discount) > 0 && (
-              <div className="kv"><span>Discount</span><span style={{ color: "var(--success)" }}>− {formatCurrency(Number(discount), currency)}</span></div>
-            )}
-            <div className="kv"><span>Tax ({Number(taxPercent) || 0}%)</span><span>{formatCurrency(totals.taxAmount, currency)}</span></div>
-
-            <div className="summary-total">
-              <div className="lbl">Invoice total · {currency}</div>
-              <div className="amt">{formatCurrency(totals.total, currency)}</div>
-              {currency === "USD" && Number(exchangeRate) > 0 && (
-                <div className="lbl" style={{ marginTop: 2 }}>
-                  ≈ {formatCurrency(totals.total * Number(exchangeRate), "PKR")}
-                </div>
-              )}
-            </div>
-
-            <div className="field" style={{ marginTop: 16 }}>
-              <label>Amount paid</label>
+            <div className="field">
+              <label>Amount paid (PKR)</label>
               <div className="input-group">
-                <input className="input num" type="number" min={0} step="0.01" value={amountPaid} onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)} style={{ paddingRight: 90 }} />
+                <input
+                  className="input num"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                  style={{ paddingRight: 90 }}
+                />
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
@@ -708,10 +984,11 @@ export default function InvoiceForm({
                 </button>
               </div>
             </div>
-            <div className="kv" style={{ fontSize: 14 }}>
+
+            <div className="kv" style={{ fontSize: 14, marginTop: 10 }}>
               <span>Balance due</span>
-              <span style={{ color: totals.balance > 0.004 ? "var(--ink)" : "var(--success)" }}>
-                {formatCurrency(Math.max(totals.balance, 0), currency)}
+              <span style={{ fontWeight: 700, color: totals.balance > 0.004 ? "var(--ink)" : "var(--success)" }}>
+                {formatCurrency(Math.max(totals.balance, 0), "PKR")}
               </span>
             </div>
 
@@ -727,11 +1004,6 @@ export default function InvoiceForm({
             <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 6 }} onClick={() => router.back()}>
               Cancel
             </button>
-            {!isEdit && (
-              <p className="muted" style={{ fontSize: 11.5, textAlign: "center", marginTop: 8 }}>
-                The invoice number is generated automatically when you save.
-              </p>
-            )}
           </div>
         </aside>
       </div>

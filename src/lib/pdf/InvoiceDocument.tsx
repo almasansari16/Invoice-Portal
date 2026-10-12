@@ -5,172 +5,213 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
-  Font,
 } from "@react-pdf/renderer";
+import { formatDate, numberToWordsRupees } from "../utils";
 
-// Optional: register a clean sans font if you add font files under /public/fonts
-// Font.register({ family: "Inter", fonts: [...] });
-
-const INK = "#0f172a";
-const MUTED = "#64748b";
-const ACCENT = "#3b5bdb"; // brand blue — matches the web UI
-const LINE = "#e4e8f0";
-const BG_SOFT = "#f1f4f9";
+const BORDER_COLOR = "#000000";
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
-    fontSize: 9.5,
-    color: INK,
+    padding: 30,
+    fontSize: 8.5,
+    color: "#000000",
     fontFamily: "Helvetica",
   },
-  headerRow: {
+  // Header
+  header: {
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  companyName: {
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  companyLine: {
+    fontSize: 8,
+    lineHeight: 1.35,
+    color: "#000000",
+  },
+  companyEmail: {
+    fontSize: 8,
+    fontWeight: 700,
+    color: "#1d4ed8",
+    marginTop: 1,
+  },
+
+  // Main meta box
+  metaBox: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    marginBottom: -1,
+  },
+  partiesCol: {
+    width: "53%",
+    borderRightWidth: 1,
+    borderRightColor: BORDER_COLOR,
+    padding: 8,
+  },
+  partySection: {
+    marginBottom: 8,
+  },
+  partyHeading: {
+    fontSize: 8.5,
+    fontWeight: 700,
+    textTransform: "uppercase",
+  },
+  partyContent: {
+    paddingLeft: 12,
+    marginTop: 2,
+    fontSize: 7.8,
+    lineHeight: 1.35,
+  },
+  partyContentBold: {
+    fontWeight: 700,
+    fontSize: 8.2,
+  },
+
+  specsCol: {
+    width: "47%",
+    padding: 8,
+  },
+  specRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 24,
+    marginBottom: 2.5,
   },
-  logo: { width: 120, height: 60, objectFit: "contain", marginBottom: 8 },
-  companyName: { fontSize: 15, fontWeight: 700, marginBottom: 2 },
-  companyLine: { fontSize: 8.5, color: MUTED, lineHeight: 1.5 },
-  invoiceTitle: {
-    fontSize: 22,
+  specLabel: {
+    fontSize: 7.8,
     fontWeight: 700,
-    color: ACCENT,
-    letterSpacing: 1,
-    textAlign: "right",
+    width: "45%",
   },
-  invoiceMetaBox: { alignItems: "flex-end", marginTop: 6 },
-  metaRow: { flexDirection: "row", marginBottom: 2 },
-  metaLabel: { color: MUTED, width: 90, textAlign: "right", marginRight: 6 },
-  metaValue: { fontWeight: 700, textAlign: "right" },
-
-  divider: { borderBottomWidth: 1, borderBottomColor: LINE, marginVertical: 16 },
-
-  twoCol: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18 },
-  colBlock: { width: "48%" },
-  blockLabel: {
-    fontSize: 8,
-    color: ACCENT,
-    letterSpacing: 0.5,
-    marginBottom: 4,
+  specValue: {
+    fontSize: 7.8,
+    width: "55%",
+  },
+  specValueBold: {
     fontWeight: 700,
   },
-  blockText: { fontSize: 9.5, lineHeight: 1.5 },
-  blockTextMuted: { fontSize: 9, color: MUTED, lineHeight: 1.5 },
 
-  shipmentBox: {
-    backgroundColor: BG_SOFT,
-    padding: 10,
-    borderRadius: 3,
-    marginBottom: 18,
+  // Items table
+  table: {
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
   },
-  shipmentGrid: { flexDirection: "row", flexWrap: "wrap" },
-  shipmentItem: { width: "33%", marginBottom: 6 },
-  shipmentLabel: { fontSize: 7.5, color: MUTED, textTransform: "uppercase" },
-  shipmentValue: { fontSize: 9, fontWeight: 700, marginTop: 1 },
-
-  table: { marginTop: 6 },
-  tableHeader: {
+  thRow: {
     flexDirection: "row",
-    borderBottomWidth: 1.2,
-    borderBottomColor: INK,
-    paddingBottom: 6,
-    marginBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_COLOR,
+    paddingVertical: 4,
   },
-  th: { fontSize: 8, color: MUTED, fontWeight: 700, textTransform: "uppercase" },
+  th: {
+    fontSize: 7.8,
+    fontWeight: 700,
+    textTransform: "uppercase",
+  },
   tr: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
-    borderBottomColor: LINE,
-    paddingVertical: 7,
+    borderBottomColor: "#cbd5e1",
+    paddingVertical: 3.5,
   },
-  td: { fontSize: 9.5 },
+  trBlank: {
+    flexDirection: "row",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e2e8f0",
+    height: 16,
+  },
+  td: {
+    fontSize: 7.8,
+  },
 
-  colDesc: { width: "46%" },
-  colQty: { width: "14%", textAlign: "right" },
-  colRate: { width: "20%", textAlign: "right" },
-  colAmt: { width: "20%", textAlign: "right" },
+  colSno: { width: "8%", textAlign: "center", borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colDesc: { width: "47%", paddingHorizontal: 6, borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colRate: { width: "13%", textAlign: "right", paddingRight: 4, borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colForeign: { width: "15%", textAlign: "right", paddingRight: 4, borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colPkr: { width: "17%", textAlign: "right", paddingRight: 6 },
 
-  totalsWrap: { flexDirection: "row", justifyContent: "flex-end", marginTop: 14 },
-  totalsBox: { width: 220 },
+  // Grand total row
   totalRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
+    borderTopWidth: 1,
+    borderTopColor: BORDER_COLOR,
+    paddingVertical: 5,
   },
-  totalLabel: { color: MUTED },
-  totalValue: { fontWeight: 700 },
-  grandTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderTopWidth: 1.2,
-    borderTopColor: INK,
-    marginTop: 4,
-    paddingTop: 8,
-  },
-  grandTotalLabel: { fontSize: 11, fontWeight: 700 },
-  grandTotalValue: { fontSize: 13, fontWeight: 700, color: ACCENT },
-
-  footerCols: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 28,
-  },
-  footerBlock: { width: "48%" },
-
-  statusBadge: {
-    alignSelf: "flex-end",
-    marginTop: 6,
-    fontSize: 8,
+  totalLabel: {
+    width: "83%",
+    paddingLeft: 10,
     fontWeight: 700,
-    letterSpacing: 0.5,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 2,
-    color: "#fff",
+    fontSize: 8.5,
+    borderRightWidth: 1,
+    borderRightColor: BORDER_COLOR,
+  },
+  totalVal: {
+    width: "17%",
+    textAlign: "right",
+    paddingRight: 6,
+    fontWeight: 700,
+    fontSize: 8.5,
   },
 
-  pageFooter: {
-    position: "absolute",
-    bottom: 24,
-    left: 40,
-    right: 40,
-    borderTopWidth: 0.5,
-    borderTopColor: LINE,
-    paddingTop: 8,
+  // Words Box
+  wordsBox: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: BORDER_COLOR,
+    padding: 6,
+  },
+  wordsHeading: {
+    fontSize: 7.8,
+    fontWeight: 700,
+  },
+  wordsText: {
     fontSize: 7.5,
-    color: MUTED,
+    marginTop: 2,
+    fontWeight: 600,
+  },
+
+  // Terms Box
+  termsBox: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: BORDER_COLOR,
+    padding: 7,
+    fontSize: 7,
+    lineHeight: 1.45,
+  },
+  termsHeading: {
+    fontWeight: 700,
+    marginBottom: 2,
+  },
+
+  // Signatures
+  signRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 36,
+  },
+  signBox: {
+    width: 170,
+    borderTopWidth: 1,
+    borderTopColor: BORDER_COLOR,
+    paddingTop: 4,
+    textAlign: "center",
+  },
+  signText: {
+    fontSize: 7.5,
+    fontWeight: 700,
     textAlign: "center",
   },
 });
 
-function money(amount: number | string, currency: string) {
-  const v = typeof amount === "string" ? parseFloat(amount) : amount;
-  const symbol = currency === "USD" ? "$" : "Rs";
-  return `${symbol} ${new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(v || 0)}`;
+function fmtMoney(amount: number | string | null | undefined) {
+  if (amount === null || amount === undefined || amount === "") return "";
+  const v = Number(amount);
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(v);
 }
-
-function fmtDate(d: string | Date | null | undefined) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  DRAFT: "#64748b",
-  SENT: "#2563eb",
-  PAID: "#059669",
-  OVERDUE: "#dc2626",
-  CANCELLED: "#94a3b8",
-};
 
 export type InvoicePdfProps = {
   invoice: any;
@@ -178,244 +219,221 @@ export type InvoicePdfProps = {
 };
 
 export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
-  const currency = invoice.currency;
+  const isAir = (invoice.shipmentMode || "").toLowerCase().includes("air");
+  const foreignCurrency = invoice.foreignCurrency || "USD";
+  const exRate = Number(invoice.exchangeRate) || 0;
+  const inWords = numberToWordsRupees(invoice.total);
+
+  const blankRowsCount = Math.max(0, 7 - (invoice.items?.length || 0));
 
   return (
     <Document title={invoice.invoiceNumber}>
       <Page size="A4" style={styles.page}>
         {/* Header */}
-        <View style={styles.headerRow}>
-          <View>
-            {company?.logoUrl ? (
-              <Image src={company.logoUrl} style={styles.logo} />
-            ) : (
-              <Text style={styles.companyName}>{company?.companyName || "Your Company"}</Text>
-            )}
-            {company?.logoUrl && (
-              <Text style={styles.companyName}>{company?.companyName}</Text>
-            )}
-            <Text style={styles.companyLine}>{company?.address}</Text>
-            <Text style={styles.companyLine}>
-              {[company?.phone, company?.email, company?.website].filter(Boolean).join("  •  ")}
-            </Text>
-            {company?.taxNumber && (
-              <Text style={styles.companyLine}>Tax No: {company.taxNumber}</Text>
-            )}
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.companyName}>
+            {company?.companyName || "SKY LOGISTICS SOLUTIONS"}
+          </Text>
+          <Text style={styles.companyLine}>
+            {company?.address ||
+              "Office No, G-1,Ground Floor,Plot NoA1-120 BLK-B, CHS BLK-13/A GULSHAN IQBAL, KARACHI - 75400 PAKISTAN"}
+          </Text>
+          <Text style={styles.companyLine}>
+            Cell: {company?.phone || "0335-1909080"}
+          </Text>
+          <Text style={styles.companyEmail}>
+            Email: {company?.email || "info@skylogisticssolutions.com"}
+          </Text>
+        </View>
 
-          <View>
-            <Text style={styles.invoiceTitle}>INVOICE</Text>
-            <View style={styles.invoiceMetaBox}>
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Invoice No</Text>
-                <Text style={styles.metaValue}>{invoice.invoiceNumber}</Text>
+        {/* Parties & Specs Box */}
+        <View style={styles.metaBox}>
+          {/* Left Block */}
+          <View style={styles.partiesCol}>
+            {/* MESSERS */}
+            <View style={styles.partySection}>
+              <Text style={styles.partyHeading}>MESSERS</Text>
+              <View style={styles.partyContent}>
+                <Text style={styles.partyContentBold}>
+                  {invoice.customer?.company || invoice.customer?.name}
+                </Text>
+                {invoice.customer?.address && (
+                  <Text>{invoice.customer.address}</Text>
+                )}
+                <Text>
+                  {[invoice.customer?.city, invoice.customer?.country].filter(Boolean).join(" ")}
+                </Text>
+                {invoice.customer?.taxNumber && (
+                  <Text>NTN: {invoice.customer.taxNumber}</Text>
+                )}
               </View>
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Date</Text>
-                <Text style={styles.metaValue}>{fmtDate(invoice.invoiceDate)}</Text>
+            </View>
+
+            {/* SHIPPER */}
+            <View style={styles.partySection}>
+              <Text style={styles.partyHeading}>SHIPPER</Text>
+              <View style={styles.partyContent}>
+                <Text>{invoice.shipper || "—"}</Text>
               </View>
-              {invoice.dueDate && (
-                <View style={styles.metaRow}>
-                  <Text style={styles.metaLabel}>Due Date</Text>
-                  <Text style={styles.metaValue}>{fmtDate(invoice.dueDate)}</Text>
-                </View>
-              )}
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: STATUS_COLOR[invoice.status] || "#64748b" },
-                ]}
-              >
-                <Text>{invoice.status}</Text>
+            </View>
+
+            {/* CONSIGNEE */}
+            <View style={[styles.partySection, { marginBottom: 0 }]}>
+              <Text style={styles.partyHeading}>CONSIGNEE</Text>
+              <View style={styles.partyContent}>
+                <Text>
+                  {invoice.consignee || invoice.customer?.company || invoice.customer?.name || "—"}
+                </Text>
               </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.divider} />
-
-        {/* Bill To / Currency */}
-        <View style={styles.twoCol}>
-          <View style={styles.colBlock}>
-            <Text style={styles.blockLabel}>BILL TO</Text>
-            <Text style={styles.blockText}>{invoice.customer?.name}</Text>
-            {invoice.customer?.company && (
-              <Text style={styles.blockTextMuted}>{invoice.customer.company}</Text>
-            )}
-            {invoice.customer?.address && (
-              <Text style={styles.blockTextMuted}>{invoice.customer.address}</Text>
-            )}
-            <Text style={styles.blockTextMuted}>
-              {[invoice.customer?.city, invoice.customer?.country].filter(Boolean).join(", ")}
-            </Text>
-            {invoice.customer?.phone && (
-              <Text style={styles.blockTextMuted}>{invoice.customer.phone}</Text>
-            )}
-            {invoice.customer?.email && (
-              <Text style={styles.blockTextMuted}>{invoice.customer.email}</Text>
-            )}
-          </View>
-
-          <View style={[styles.colBlock, { alignItems: "flex-end" }]}>
-            <Text style={styles.blockLabel}>CURRENCY</Text>
-            <Text style={styles.blockText}>{currency}</Text>
-            {invoice.exchangeRate && (
-              <Text style={styles.blockTextMuted}>
-                Rate: 1 USD = {Number(invoice.exchangeRate)} PKR
+          {/* Right Block */}
+          <View style={styles.specsCol}>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>BILL NO:</Text>
+              <Text style={[styles.specValue, styles.specValueBold]}>{invoice.invoiceNumber}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>DATE:</Text>
+              <Text style={styles.specValue}>{formatDate(invoice.invoiceDate)}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>TYPE</Text>
+              <Text style={styles.specValue}>
+                {invoice.shipmentMode ? `BY ${invoice.shipmentMode.toUpperCase()}` : "BY AIR"}
               </Text>
+            </View>
+
+            {isAir ? (
+              <>
+                <View style={styles.specRow}>
+                  <Text style={styles.specLabel}>MASTER AWB:</Text>
+                  <Text style={styles.specValue}>{invoice.masterAwb || "—"}</Text>
+                </View>
+                <View style={styles.specRow}>
+                  <Text style={styles.specLabel}>HOUSE AWB:</Text>
+                  <Text style={styles.specValue}>{invoice.houseAwb || "—"}</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.specRow}>
+                  <Text style={styles.specLabel}>HBL NO:</Text>
+                  <Text style={styles.specValue}>{invoice.hblNo || invoice.trackingNo || "—"}</Text>
+                </View>
+                {invoice.containerNo && (
+                  <View style={styles.specRow}>
+                    <Text style={styles.specLabel}>CONTAINER NO:</Text>
+                    <Text style={styles.specValue}>{invoice.containerNo}</Text>
+                  </View>
+                )}
+              </>
             )}
+
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>PACKAGES:</Text>
+              <Text style={styles.specValue}>{invoice.packages || "—"}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>ORIGIN:</Text>
+              <Text style={styles.specValue}>{invoice.originPort || "—"}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>FINAL DESTINATION:</Text>
+              <Text style={styles.specValue}>{invoice.destinationPort || "—"}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>CHARGEABLE WEIGHT:</Text>
+              <Text style={[styles.specValue, { textAlign: "right" }]}>{invoice.chargeableWeight || "—"}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>GROSS WEIGHT:</Text>
+              <Text style={[styles.specValue, { textAlign: "right" }]}>{invoice.grossWeight || "—"}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>CBM:</Text>
+              <Text style={{ width: "25%", fontSize: 7.8 }}>{invoice.cbm || "—"}</Text>
+              <Text style={{ width: "20%", fontSize: 7.8, fontWeight: 700, textAlign: "right" }}>EX. RATE:</Text>
+              <Text style={{ width: "10%", fontSize: 7.8, fontWeight: 700, textAlign: "right" }}>
+                {exRate > 0 ? exRate.toFixed(2) : "—"}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Shipment details */}
-        {(invoice.originPort ||
-          invoice.destinationPort ||
-          invoice.shipmentMode ||
-          invoice.containerNo ||
-          invoice.trackingNo ||
-          invoice.weight ||
-          invoice.shippingDate) && (
-          <View style={styles.shipmentBox}>
-            <Text style={styles.blockLabel}>SHIPMENT DETAILS</Text>
-            <View style={styles.shipmentGrid}>
-              {invoice.originPort && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Origin</Text>
-                  <Text style={styles.shipmentValue}>{invoice.originPort}</Text>
-                </View>
-              )}
-              {invoice.destinationPort && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Destination</Text>
-                  <Text style={styles.shipmentValue}>{invoice.destinationPort}</Text>
-                </View>
-              )}
-              {invoice.shipmentMode && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Mode</Text>
-                  <Text style={styles.shipmentValue}>{invoice.shipmentMode}</Text>
-                </View>
-              )}
-              {invoice.containerNo && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Container No</Text>
-                  <Text style={styles.shipmentValue}>{invoice.containerNo}</Text>
-                </View>
-              )}
-              {invoice.trackingNo && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Tracking No</Text>
-                  <Text style={styles.shipmentValue}>{invoice.trackingNo}</Text>
-                </View>
-              )}
-              {invoice.weight && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Weight</Text>
-                  <Text style={styles.shipmentValue}>{invoice.weight}</Text>
-                </View>
-              )}
-              {invoice.shippingDate && (
-                <View style={styles.shipmentItem}>
-                  <Text style={styles.shipmentLabel}>Shipping Date</Text>
-                  <Text style={styles.shipmentValue}>{fmtDate(invoice.shippingDate)}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Line items table */}
+        {/* Table of items */}
         <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.th, styles.colDesc]}>Description</Text>
-            <Text style={[styles.th, styles.colQty]}>Qty</Text>
+          <View style={styles.thRow}>
+            <Text style={[styles.th, styles.colSno]}>S. No</Text>
+            <Text style={[styles.th, styles.colDesc]}>DESCRIPTION</Text>
             <Text style={[styles.th, styles.colRate]}>Rate</Text>
-            <Text style={[styles.th, styles.colAmt]}>Amount</Text>
+            <Text style={[styles.th, styles.colForeign]}>Amount({foreignCurrency})</Text>
+            <Text style={[styles.th, styles.colPkr]}>Amount (PKR)</Text>
           </View>
 
-          {invoice.items?.map((item: any, i: number) => (
-            <View style={styles.tr} key={item.id || i} wrap={false}>
-              <Text style={[styles.td, styles.colDesc]}>{item.description}</Text>
-              <Text style={[styles.td, styles.colQty]}>{Number(item.quantity)}</Text>
-              <Text style={[styles.td, styles.colRate]}>{money(item.unitPrice, currency)}</Text>
-              <Text style={[styles.td, styles.colAmt]}>{money(item.amount, currency)}</Text>
+          {invoice.items?.map((item: any, idx: number) => {
+            const hasForeign =
+              item.foreignAmount !== null && item.foreignAmount !== undefined && Number(item.foreignAmount) > 0;
+            const rateVal =
+              item.rate !== null && item.rate !== undefined && Number(item.rate) > 0 ? Number(item.rate) : null;
+
+            return (
+              <View style={styles.tr} key={item.id || idx} wrap={false}>
+                <Text style={[styles.td, styles.colSno, { fontWeight: 700 }]}>{idx + 1}</Text>
+                <Text style={[styles.td, styles.colDesc, { fontWeight: 700 }]}>{item.description}</Text>
+                <Text style={[styles.td, styles.colRate]}>{rateVal !== null ? fmtMoney(rateVal) : ""}</Text>
+                <Text style={[styles.td, styles.colForeign, { fontWeight: 700 }]}>
+                  {hasForeign ? fmtMoney(item.foreignAmount) : ""}
+                </Text>
+                <Text style={[styles.td, styles.colPkr, { fontWeight: 700 }]}>
+                  Rs. {fmtMoney(item.amount)}
+                </Text>
+              </View>
+            );
+          })}
+
+          {/* Blank spacer rows to match exact physical invoice proportions */}
+          {Array.from({ length: blankRowsCount }).map((_, i) => (
+            <View style={styles.trBlank} key={`blank-${i}`} wrap={false}>
+              <Text style={styles.colSno}></Text>
+              <Text style={styles.colDesc}></Text>
+              <Text style={styles.colRate}></Text>
+              <Text style={styles.colForeign}></Text>
+              <Text style={styles.colPkr}></Text>
             </View>
           ))}
-        </View>
 
-        {/* Totals */}
-        <View style={styles.totalsWrap}>
-          <View style={styles.totalsBox}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal</Text>
-              <Text style={styles.totalValue}>{money(invoice.subtotal, currency)}</Text>
-            </View>
-            {parseFloat(invoice.discount) > 0 && (
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Discount</Text>
-                <Text style={styles.totalValue}>-{money(invoice.discount, currency)}</Text>
-              </View>
-            )}
-            {parseFloat(invoice.taxPercent) > 0 && (
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Tax ({Number(invoice.taxPercent)}%)</Text>
-                <Text style={styles.totalValue}>{money(invoice.taxAmount, currency)}</Text>
-              </View>
-            )}
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>Total</Text>
-              <Text style={styles.grandTotalValue}>{money(invoice.total, currency)}</Text>
-            </View>
-            {parseFloat(invoice.amountPaid) > 0 && (
-              <>
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Amount Paid</Text>
-                  <Text style={styles.totalValue}>{money(invoice.amountPaid, currency)}</Text>
-                </View>
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Balance Due</Text>
-                  <Text style={styles.totalValue}>
-                    {money(
-                      parseFloat(invoice.total) - parseFloat(invoice.amountPaid),
-                      currency
-                    )}
-                  </Text>
-                </View>
-              </>
-            )}
+          {/* Grand total row */}
+          <View style={styles.totalRow} wrap={false}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalVal}>
+              Rs. {new Intl.NumberFormat("en-US").format(Math.round(Number(invoice.total)))}
+            </Text>
           </View>
         </View>
 
-        {/* Notes / Terms / Bank details */}
-        <View style={styles.footerCols}>
-          <View style={styles.footerBlock}>
-            {invoice.notes && (
-              <>
-                <Text style={styles.blockLabel}>NOTES</Text>
-                <Text style={styles.blockTextMuted}>{invoice.notes}</Text>
-              </>
-            )}
-          </View>
-          <View style={styles.footerBlock}>
-            {company?.bankDetails && (
-              <>
-                <Text style={styles.blockLabel}>BANK DETAILS</Text>
-                <Text style={styles.blockTextMuted}>{company.bankDetails}</Text>
-              </>
-            )}
-          </View>
+        {/* IN WORDS Box */}
+        <View style={styles.wordsBox} wrap={false}>
+          <Text style={styles.wordsHeading}>IN WORDS:-</Text>
+          <Text style={styles.wordsText}>{inWords}</Text>
         </View>
 
-        {invoice.terms && (
-          <View style={{ marginTop: 12 }} wrap={false}>
-            <Text style={styles.blockLabel}>TERMS &amp; CONDITIONS</Text>
-            <Text style={styles.blockTextMuted}>{invoice.terms}</Text>
-          </View>
-        )}
+        {/* Terms Box */}
+        <View style={styles.termsBox} wrap={false}>
+          <Text style={styles.termsHeading}>Terms &amp; Conditions:-</Text>
+          <Text>
+            {invoice.terms ||
+              "1. If any Discrepancy in this invoice must be notified within 7 days to us, from the date of receipt, after that no claim shall be entertained.\n2. Kindly clear your payments within approved credit days to avoid finical charges.\n3. Cheque, Pay order or Demand Draft must in Favor of \"Sky logistics Solutions\"."}
+          </Text>
+        </View>
 
-        <Text style={styles.pageFooter} fixed>
-          {company?.footerNote || "Thank you for your business."}
-        </Text>
+        {/* Authorized Signature */}
+        <View style={styles.signRow} wrap={false}>
+          <View style={styles.signBox}>
+            <Text style={styles.signText}>Authorized Signature &amp; Stamp</Text>
+          </View>
+        </View>
       </Page>
     </Document>
   );

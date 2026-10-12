@@ -12,36 +12,63 @@ export default async function EditInvoicePage({ params }: { params: { id: string
       where: { id: params.id },
       include: { items: { orderBy: { sortOrder: "asc" } } },
     }),
-    prisma.customer.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, company: true, email: true, city: true, country: true } }),
+    prisma.customer.findMany({
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   if (!invoice) notFound();
 
   const initial = {
     id: invoice.id,
+    invoiceNumber: invoice.invoiceNumber,
     customerId: invoice.customerId,
     invoiceDate: invoice.invoiceDate.toISOString(),
     dueDate: invoice.dueDate?.toISOString() || null,
     currency: invoice.currency as "USD" | "PKR",
+    foreignCurrency: (invoice as any).foreignCurrency || "USD",
     exchangeRate: invoice.exchangeRate ? Number(invoice.exchangeRate) : null,
     status: invoice.status,
+
+    // freight parties & routing
+    shipper: (invoice as any).shipper || "",
+    consignee: (invoice as any).consignee || "",
     originPort: invoice.originPort,
     destinationPort: invoice.destinationPort,
-    shipmentMode: invoice.shipmentMode,
+    shipmentMode: invoice.shipmentMode || "Air",
+
+    // air freight docs
+    masterAwb: (invoice as any).masterAwb || "",
+    houseAwb: (invoice as any).houseAwb || "",
+
+    // sea freight docs
+    hblNo: (invoice as any).hblNo || "",
+    mblNo: (invoice as any).mblNo || "",
     containerNo: invoice.containerNo,
+    vesselName: (invoice as any).vesselName || "",
+
+    // cargo specs
+    packages: (invoice as any).packages || "",
+    chargeableWeight: (invoice as any).chargeableWeight || "",
+    grossWeight: (invoice as any).grossWeight || "",
+    cbm: (invoice as any).cbm || "",
     trackingNo: invoice.trackingNo,
     weight: invoice.weight,
     shippingDate: invoice.shippingDate?.toISOString() || null,
+
     discount: Number(invoice.discount),
     taxPercent: Number(invoice.taxPercent),
     amountPaid: Number(invoice.amountPaid),
     notes: invoice.notes,
     terms: invoice.terms,
-    items: invoice.items.map((i) => ({
+    items: invoice.items.map((i: any) => ({
       id: i.id,
       description: i.description,
-      quantity: Number(i.quantity),
-      unitPrice: Number(i.unitPrice),
+      rate: i.rate !== null && i.rate !== undefined ? Number(i.rate) : undefined,
+      foreignAmount: i.foreignAmount !== null && i.foreignAmount !== undefined ? Number(i.foreignAmount) : undefined,
+      quantity: Number(i.quantity) || 1,
+      unitPrice: Number(i.unitPrice) || 0,
+      amount: Number(i.amount) || 0,
     })),
   };
 

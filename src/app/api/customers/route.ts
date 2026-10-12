@@ -7,12 +7,20 @@ import { z } from "zod";
 const customerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   company: z.string().optional().nullable(),
+  customerType: z.string().optional().nullable(),
   email: z.string().email().optional().or(z.literal("")).nullable(),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
+  postalCode: z.string().optional().nullable(),
+  shippingAddress: z.string().optional().nullable(),
   taxNumber: z.string().optional().nullable(),
+  strn: z.string().optional().nullable(),
+  cnic: z.string().optional().nullable(),
+  defaultPaymentTerms: z.string().optional().nullable(),
+  preferredCurrency: z.enum(["PKR", "USD"]).optional().default("PKR"),
   notes: z.string().optional().nullable(),
 });
 
@@ -32,6 +40,9 @@ export async function GET(req: NextRequest) {
           { company: { contains: q, mode: "insensitive" as const } },
           { email: { contains: q, mode: "insensitive" as const } },
           { phone: { contains: q, mode: "insensitive" as const } },
+          { taxNumber: { contains: q, mode: "insensitive" as const } },
+          { strn: { contains: q, mode: "insensitive" as const } },
+          { cnic: { contains: q, mode: "insensitive" as const } },
         ],
       }
     : {};

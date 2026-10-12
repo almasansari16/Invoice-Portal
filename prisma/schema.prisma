@@ -42,20 +42,28 @@ model User {
 }
 
 model Customer {
-  id          String   @id @default(cuid())
-  name        String
-  company     String?
-  email       String?
-  phone       String?
-  address     String?  @db.Text
-  city        String?
-  country     String?
-  taxNumber   String?
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  name                String
+  company             String?
+  customerType        String?   // e.g. "Corporate", "Registered", "Unregistered", "Individual"
+  email               String?
+  phone               String?
+  address             String?   @db.Text // Billing address
+  city                String?
+  state               String?
+  country             String?
+  postalCode          String?
+  shippingAddress     String?   @db.Text // Shipping / Delivery address
+  taxNumber           String?   // NTN Number
+  strn                String?   // Sales Tax Registration Number
+  cnic                String?   // National Identity Card Number
+  defaultPaymentTerms String?   // "On receipt", "Net 7", "Net 15", "Net 30"
+  preferredCurrency   Currency  @default(PKR)
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  invoices    Invoice[]
+  invoices            Invoice[]
 
   @@index([name])
   @@index([email])
@@ -91,17 +99,35 @@ model Invoice {
   createdById    String?
   createdBy      User?         @relation(fields: [createdById], references: [id])
 
-  // shipment details
+  // freight parties & routing
+  shipper        String?       @db.Text
+  consignee      String?       @db.Text
   originPort     String?
   destinationPort String?
-  shipmentMode   String?      // Air / Sea / Road
+  shipmentMode   String?       // "Air" / "Sea" / "Road"
+
+  // air freight docs
+  masterAwb      String?
+  houseAwb       String?
+
+  // sea freight docs
+  hblNo          String?
+  mblNo          String?
   containerNo    String?
+  vesselName     String?
+
+  // cargo specs
+  packages       String?
+  chargeableWeight String?
+  grossWeight    String?
+  cbm            String?
   trackingNo     String?
   weight         String?
   shippingDate   DateTime?
 
   currency       Currency      @default(PKR)
-  exchangeRate   Decimal?      @db.Decimal(12, 4) // e.g. PKR per USD, for reference on the invoice
+  foreignCurrency String?      // e.g. "USD", "EUR"
+  exchangeRate   Decimal?      @db.Decimal(12, 4) // e.g. PKR per USD/EUR
 
   status         InvoiceStatus @default(DRAFT)
 
@@ -127,13 +153,15 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String   @id @default(cuid())
-  invoiceId   String
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-  description String
-  quantity    Decimal  @db.Decimal(12, 2) @default(1)
-  unitPrice   Decimal  @db.Decimal(14, 2) @default(0)
-  amount      Decimal  @db.Decimal(14, 2) @default(0)
-  sortOrder   Int      @default(0)
+  description   String
+  rate          Decimal? @db.Decimal(14, 2)
+  foreignAmount Decimal? @db.Decimal(14, 2)
+  quantity      Decimal  @db.Decimal(12, 2) @default(1)
+  unitPrice     Decimal  @db.Decimal(14, 2) @default(0)
+  amount        Decimal  @db.Decimal(14, 2) @default(0)
+  sortOrder     Int      @default(0)
 }

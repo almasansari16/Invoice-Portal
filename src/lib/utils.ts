@@ -81,3 +81,38 @@ export function formatCompact(amount: number, currency: "USD" | "PKR") {
   }).format(amount || 0);
   return `${symbol} ${formatted}`;
 }
+
+const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+function convertLessThanThousand(n: number): string {
+  if (n === 0) return "";
+  if (n < 20) return ONES[n] + " ";
+  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + ONES[n % 10] : "") + " ";
+  return ONES[Math.floor(n / 100)] + " Hundred " + (n % 100 !== 0 ? convertLessThanThousand(n % 100) : "");
+}
+
+export function numberToWordsRupees(amount: number | string): string {
+  const val = Math.round(Number(amount) || 0);
+  if (val === 0) return "Rupees Zero Only.";
+
+  let n = Math.abs(val);
+  let res = "";
+
+  const billions = Math.floor(n / 1000000000);
+  n %= 1000000000;
+  if (billions > 0) res += convertLessThanThousand(billions).trim() + " Billion ";
+
+  const millions = Math.floor(n / 1000000);
+  n %= 1000000;
+  if (millions > 0) res += convertLessThanThousand(millions).trim() + " Million ";
+
+  const thousands = Math.floor(n / 1000);
+  n %= 1000;
+  if (thousands > 0) res += convertLessThanThousand(thousands).trim() + " Thousand ";
+
+  if (n > 0) res += convertLessThanThousand(n).trim() + " ";
+
+  return `Rupees ${res.trim().replace(/\s+/g, " ")} Only.`;
+}
+
