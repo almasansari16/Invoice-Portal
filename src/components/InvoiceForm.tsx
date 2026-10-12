@@ -309,20 +309,20 @@ export default function InvoiceForm({
     setExchangeRate(t.exchangeRate ? String(t.exchangeRate) : "");
     setStatus(t.status);
     setShipmentMode(t.mode);
-    setShipper(t.shipper);
-    setConsignee(t.consignee);
-    setOriginPort(t.originPort);
-    setDestinationPort(t.destinationPort);
+    setShipper(t.shipper || "");
+    setConsignee(t.consignee || "");
+    setOriginPort(t.originPort || "");
+    setDestinationPort(t.destinationPort || "");
     setMasterAwb(t.masterAwb || "");
     setHouseAwb(t.houseAwb || "");
     setHblNo(t.hblNo || "");
     setMblNo(t.mblNo || "");
     setContainerNo(t.containerNo || "");
     setVesselName(t.vesselName || "");
-    setPackages(t.packages);
-    setChargeableWeight(t.chargeableWeight);
-    setGrossWeight(t.grossWeight);
-    setCbm(t.cbm);
+    setPackages(t.packages || "");
+    setChargeableWeight(t.chargeableWeight || "");
+    setGrossWeight(t.grossWeight || "");
+    setCbm(t.cbm || "");
     setItems(
       t.items.map((i) => ({
         id: newId(),
@@ -331,7 +331,7 @@ export default function InvoiceForm({
         foreignAmount: i.foreignAmount ?? "",
         quantity: i.quantity,
         unitPrice: i.unitPrice,
-        amount: i.amount,
+        amount: i.amount ?? (Number(i.quantity) * Number(i.unitPrice)),
       }))
     );
     setDiscount(t.discount);

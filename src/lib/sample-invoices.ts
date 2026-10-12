@@ -9,25 +9,27 @@ export type SampleTemplate = {
   mode: "Sea" | "Air" | "Road" | "";
   customerHints: string[];
   currency: "USD" | "PKR";
-  foreignCurrency: "EUR" | "USD";
+  foreignCurrency?: "EUR" | "USD" | string;
   exchangeRate: number | null;
   status: string;
   dueInDays: number;
   shippedDaysAgo: number;
-  shipper: string;
-  consignee: string;
-  originPort: string;
-  destinationPort: string;
+  shipper?: string;
+  consignee?: string;
+  originPort?: string;
+  destinationPort?: string;
   masterAwb?: string;
   houseAwb?: string;
   hblNo?: string;
   mblNo?: string;
   containerNo?: string;
   vesselName?: string;
-  packages: string;
-  chargeableWeight: string;
-  grossWeight: string;
-  cbm: string;
+  packages?: string;
+  chargeableWeight?: string;
+  grossWeight?: string;
+  cbm?: string;
+  trackingNo?: string;
+  weight?: string;
   discount: number;
   taxPercent: number;
   amountPaid: number;
@@ -39,7 +41,7 @@ export type SampleTemplate = {
     foreignAmount?: number;
     quantity: number;
     unitPrice: number;
-    amount: number;
+    amount?: number;
   }[];
 };
 
@@ -134,11 +136,11 @@ export const SAMPLE_TEMPLATES: SampleTemplate[] = [
     notes: "32 cartons — ready-made garments. Flight PK-757, priority handling requested.",
     terms: "Payment due within 15 days of invoice date. Chargeable weight is the greater of actual and volumetric weight.",
     items: [
-      { description: "Air Freight Charges (per kg)", quantity: 480, unitPrice: 3.85 },
-      { description: "Fuel Surcharge (per kg)", quantity: 480, unitPrice: 0.65 },
-      { description: "Security Screening", quantity: 1, unitPrice: 45 },
-      { description: "Air Waybill (AWB) Fee", quantity: 1, unitPrice: 35 },
-      { description: "Export Documentation", quantity: 1, unitPrice: 60 },
+      { description: "Air Freight Charges (per kg)", quantity: 480, unitPrice: 3.85, amount: 1848 },
+      { description: "Fuel Surcharge (per kg)", quantity: 480, unitPrice: 0.65, amount: 312 },
+      { description: "Security Screening", quantity: 1, unitPrice: 45, amount: 45 },
+      { description: "Air Waybill (AWB) Fee", quantity: 1, unitPrice: 35, amount: 35 },
+      { description: "Export Documentation", quantity: 1, unitPrice: 60, amount: 60 },
     ],
   },
   {
@@ -163,10 +165,10 @@ export const SAMPLE_TEMPLATES: SampleTemplate[] = [
     notes: "Vehicle JU-4471, driver Muhammad Aslam (0300-1234567). Delivered in 2 days.",
     terms: "50% advance received. Balance due within 15 days of delivery. Detention charged at Rs 6,000/day after 24 free hours.",
     items: [
-      { description: "40ft Trailer Haulage — Karachi to Lahore", quantity: 1, unitPrice: 185000 },
-      { description: "Loading / Unloading Labour", quantity: 1, unitPrice: 12500 },
-      { description: "Motorway Tolls & Route Tax", quantity: 1, unitPrice: 8400 },
-      { description: "Warehouse Storage (per day)", quantity: 3, unitPrice: 4500 },
+      { description: "40ft Trailer Haulage — Karachi to Lahore", quantity: 1, unitPrice: 185000, amount: 185000 },
+      { description: "Loading / Unloading Labour", quantity: 1, unitPrice: 12500, amount: 12500 },
+      { description: "Motorway Tolls & Route Tax", quantity: 1, unitPrice: 8400, amount: 8400 },
+      { description: "Warehouse Storage (per day)", quantity: 3, unitPrice: 4500, amount: 13500 },
     ],
   },
   {
@@ -191,11 +193,11 @@ export const SAMPLE_TEMPLATES: SampleTemplate[] = [
     notes: "Import of agricultural machinery parts. Goods Declaration filed via WeBOC.",
     terms: "Duties and taxes paid on behalf of the client are reimbursable at actuals. Payment due within 7 days.",
     items: [
-      { description: "Customs Clearance & Agency Fee", quantity: 1, unitPrice: 35000 },
-      { description: "Delivery Order (DO) Charges", quantity: 1, unitPrice: 18500 },
-      { description: "Container Examination Charges", quantity: 1, unitPrice: 7500 },
-      { description: "Port Handling & Lift-on/Lift-off", quantity: 1, unitPrice: 14200 },
-      { description: "Transport — Port Qasim to Korangi", quantity: 1, unitPrice: 28000 },
+      { description: "Customs Clearance & Agency Fee", quantity: 1, unitPrice: 35000, amount: 35000 },
+      { description: "Delivery Order (DO) Charges", quantity: 1, unitPrice: 18500, amount: 18500 },
+      { description: "Container Examination Charges", quantity: 1, unitPrice: 7500, amount: 7500 },
+      { description: "Port Handling & Lift-on/Lift-off", quantity: 1, unitPrice: 14200, amount: 14200 },
+      { description: "Transport — Port Qasim to Korangi", quantity: 1, unitPrice: 28000, amount: 28000 },
     ],
   },
 ];
