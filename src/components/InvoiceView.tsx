@@ -23,6 +23,20 @@ export default function InvoiceView({ invoice, company }: { invoice: any; compan
     >
       {/* 1. Header (Company Branding) */}
       <div style={{ textAlign: "center", marginBottom: 20 }}>
+        {company?.logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={company.logoUrl}
+            alt={company?.companyName || "Logo"}
+            style={{
+              maxHeight: 65,
+              maxWidth: 220,
+              objectFit: "contain",
+              margin: "0 auto 10px auto",
+              display: "block",
+            }}
+          />
+        )}
         <h1
           style={{
             fontSize: 26,
@@ -105,8 +119,9 @@ export default function InvoiceView({ invoice, company }: { invoice: any; compan
                   </>
                 ) : (
                   <>
-                    <SpecRow label="HBL NO:" value={invoice.hblNo || invoice.trackingNo} />
-                    {invoice.containerNo && <SpecRow label="CONTAINER NO:" value={invoice.containerNo} />}
+                    <SpecRow label="HBL NO:" value={invoice.hblNo || invoice.trackingNo || "—"} />
+                    <SpecRow label="CONTAINER NO:" value={invoice.containerNo || invoice.mblNo || "—"} />
+                    {invoice.vesselName && <SpecRow label="VESSEL:" value={invoice.vesselName} />}
                   </>
                 )}
 

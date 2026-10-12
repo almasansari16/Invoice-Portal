@@ -736,12 +736,30 @@ export default function InvoiceForm({
                   />
                 </div>
                 <div className="field">
-                  <label>MBL No / Container No</label>
+                  <label>Container No</label>
                   <input
                     className="input mono"
                     placeholder="e.g. MSCU 482913-7"
                     value={containerNo}
                     onChange={(e) => setContainerNo(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>MBL No (optional)</label>
+                  <input
+                    className="input mono"
+                    placeholder="e.g. MEDU1234567"
+                    value={mblNo}
+                    onChange={(e) => setMblNo(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Vessel Name (optional)</label>
+                  <input
+                    className="input"
+                    placeholder="e.g. MSC RENEE"
+                    value={vesselName}
+                    onChange={(e) => setVesselName(e.target.value)}
                   />
                 </div>
               </div>

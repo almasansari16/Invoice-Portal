@@ -5,6 +5,7 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
 } from "@react-pdf/renderer";
 import { formatDate, numberToWordsRupees } from "../utils";
 
@@ -19,8 +20,15 @@ const styles = StyleSheet.create({
   },
   // Header
   header: {
+    alignItems: "center",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  logo: {
+    maxHeight: 48,
+    maxWidth: 180,
+    marginBottom: 5,
+    objectFit: "contain",
   },
   companyName: {
     fontSize: 16,
@@ -104,7 +112,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: BORDER_COLOR,
-    paddingVertical: 4,
+    alignItems: "stretch",
+  },
+  thCell: {
+    paddingVertical: 5,
+    paddingHorizontal: 4,
+    justifyContent: "center",
   },
   th: {
     fontSize: 7.8,
@@ -115,43 +128,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 0.5,
     borderBottomColor: "#cbd5e1",
-    paddingVertical: 3.5,
+    alignItems: "stretch",
+    minHeight: 18,
   },
-  trBlank: {
-    flexDirection: "row",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#e2e8f0",
-    height: 16,
+  tdCell: {
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    justifyContent: "center",
   },
   td: {
     fontSize: 7.8,
   },
 
-  colSno: { width: "8%", textAlign: "center", borderRightWidth: 1, borderRightColor: BORDER_COLOR },
-  colDesc: { width: "47%", paddingHorizontal: 6, borderRightWidth: 1, borderRightColor: BORDER_COLOR },
-  colRate: { width: "13%", textAlign: "right", paddingRight: 4, borderRightWidth: 1, borderRightColor: BORDER_COLOR },
-  colForeign: { width: "15%", textAlign: "right", paddingRight: 4, borderRightWidth: 1, borderRightColor: BORDER_COLOR },
-  colPkr: { width: "17%", textAlign: "right", paddingRight: 6 },
+  colSno: { width: "8%", borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colDesc: { width: "47%", borderRightWidth: 1, borderRightColor: BORDER_COLOR, paddingHorizontal: 6 },
+  colRate: { width: "13%", borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colForeign: { width: "15%", borderRightWidth: 1, borderRightColor: BORDER_COLOR },
+  colPkr: { width: "17%", paddingHorizontal: 6 },
+
+  trBlank: {
+    flexDirection: "row",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e2e8f0",
+    height: 18,
+    alignItems: "stretch",
+  },
 
   // Grand total row
   totalRow: {
     flexDirection: "row",
     borderTopWidth: 1,
     borderTopColor: BORDER_COLOR,
-    paddingVertical: 5,
+    alignItems: "stretch",
   },
-  totalLabel: {
+  totalLabelCell: {
     width: "83%",
     paddingLeft: 10,
-    fontWeight: 700,
-    fontSize: 8.5,
+    paddingVertical: 5,
+    justifyContent: "center",
     borderRightWidth: 1,
     borderRightColor: BORDER_COLOR,
   },
-  totalVal: {
+  totalLabel: {
+    fontWeight: 700,
+    fontSize: 8.5,
+  },
+  totalValCell: {
     width: "17%",
-    textAlign: "right",
+    paddingVertical: 5,
     paddingRight: 6,
+    justifyContent: "center",
+  },
+  totalVal: {
+    textAlign: "right",
     fontWeight: 700,
     fontSize: 8.5,
   },
@@ -231,6 +260,9 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
+          {company?.logoUrl ? (
+            <Image src={company.logoUrl} style={styles.logo} />
+          ) : null}
           <Text style={styles.companyName}>
             {company?.companyName || "SKY LOGISTICS SOLUTIONS"}
           </Text>
@@ -322,10 +354,14 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
                   <Text style={styles.specLabel}>HBL NO:</Text>
                   <Text style={styles.specValue}>{invoice.hblNo || invoice.trackingNo || "—"}</Text>
                 </View>
-                {invoice.containerNo && (
+                <View style={styles.specRow}>
+                  <Text style={styles.specLabel}>CONTAINER NO:</Text>
+                  <Text style={styles.specValue}>{invoice.containerNo || invoice.mblNo || "—"}</Text>
+                </View>
+                {invoice.vesselName && (
                   <View style={styles.specRow}>
-                    <Text style={styles.specLabel}>CONTAINER NO:</Text>
-                    <Text style={styles.specValue}>{invoice.containerNo}</Text>
+                    <Text style={styles.specLabel}>VESSEL:</Text>
+                    <Text style={styles.specValue}>{invoice.vesselName}</Text>
                   </View>
                 )}
               </>
@@ -365,11 +401,21 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
         {/* Table of items */}
         <View style={styles.table}>
           <View style={styles.thRow}>
-            <Text style={[styles.th, styles.colSno]}>S. No</Text>
-            <Text style={[styles.th, styles.colDesc]}>DESCRIPTION</Text>
-            <Text style={[styles.th, styles.colRate]}>Rate</Text>
-            <Text style={[styles.th, styles.colForeign]}>Amount({foreignCurrency})</Text>
-            <Text style={[styles.th, styles.colPkr]}>Amount (PKR)</Text>
+            <View style={[styles.colSno, styles.thCell]}>
+              <Text style={[styles.th, { textAlign: "center" }]}>S. No</Text>
+            </View>
+            <View style={[styles.colDesc, styles.thCell]}>
+              <Text style={styles.th}>DESCRIPTION</Text>
+            </View>
+            <View style={[styles.colRate, styles.thCell]}>
+              <Text style={[styles.th, { textAlign: "right" }]}>Rate</Text>
+            </View>
+            <View style={[styles.colForeign, styles.thCell]}>
+              <Text style={[styles.th, { textAlign: "right" }]}>Amount({foreignCurrency})</Text>
+            </View>
+            <View style={[styles.colPkr, styles.thCell]}>
+              <Text style={[styles.th, { textAlign: "right" }]}>Amount (PKR)</Text>
+            </View>
           </View>
 
           {invoice.items?.map((item: any, idx: number) => {
@@ -380,15 +426,27 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
 
             return (
               <View style={styles.tr} key={item.id || idx} wrap={false}>
-                <Text style={[styles.td, styles.colSno, { fontWeight: 700 }]}>{idx + 1}</Text>
-                <Text style={[styles.td, styles.colDesc, { fontWeight: 700 }]}>{item.description}</Text>
-                <Text style={[styles.td, styles.colRate]}>{rateVal !== null ? fmtMoney(rateVal) : ""}</Text>
-                <Text style={[styles.td, styles.colForeign, { fontWeight: 700 }]}>
-                  {hasForeign ? fmtMoney(item.foreignAmount) : ""}
-                </Text>
-                <Text style={[styles.td, styles.colPkr, { fontWeight: 700 }]}>
-                  Rs. {fmtMoney(item.amount)}
-                </Text>
+                <View style={[styles.colSno, styles.tdCell]}>
+                  <Text style={[styles.td, { textAlign: "center", fontWeight: 700 }]}>{idx + 1}</Text>
+                </View>
+                <View style={[styles.colDesc, styles.tdCell]}>
+                  <Text style={[styles.td, { fontWeight: 700 }]}>{item.description}</Text>
+                </View>
+                <View style={[styles.colRate, styles.tdCell]}>
+                  <Text style={[styles.td, { textAlign: "right" }]}>
+                    {rateVal !== null ? fmtMoney(rateVal) : ""}
+                  </Text>
+                </View>
+                <View style={[styles.colForeign, styles.tdCell]}>
+                  <Text style={[styles.td, { textAlign: "right", fontWeight: 700 }]}>
+                    {hasForeign ? fmtMoney(item.foreignAmount) : ""}
+                  </Text>
+                </View>
+                <View style={[styles.colPkr, styles.tdCell]}>
+                  <Text style={[styles.td, { textAlign: "right", fontWeight: 700 }]}>
+                    Rs. {fmtMoney(item.amount)}
+                  </Text>
+                </View>
               </View>
             );
           })}
@@ -396,20 +454,24 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
           {/* Blank spacer rows to match exact physical invoice proportions */}
           {Array.from({ length: blankRowsCount }).map((_, i) => (
             <View style={styles.trBlank} key={`blank-${i}`} wrap={false}>
-              <Text style={styles.colSno}></Text>
-              <Text style={styles.colDesc}></Text>
-              <Text style={styles.colRate}></Text>
-              <Text style={styles.colForeign}></Text>
-              <Text style={styles.colPkr}></Text>
+              <View style={styles.colSno} />
+              <View style={styles.colDesc} />
+              <View style={styles.colRate} />
+              <View style={styles.colForeign} />
+              <View style={styles.colPkr} />
             </View>
           ))}
 
           {/* Grand total row */}
           <View style={styles.totalRow} wrap={false}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalVal}>
-              Rs. {new Intl.NumberFormat("en-US").format(Math.round(Number(invoice.total)))}
-            </Text>
+            <View style={styles.totalLabelCell}>
+              <Text style={styles.totalLabel}>Total</Text>
+            </View>
+            <View style={styles.totalValCell}>
+              <Text style={styles.totalVal}>
+                Rs. {new Intl.NumberFormat("en-US").format(Math.round(Number(invoice.total)))}
+              </Text>
+            </View>
           </View>
         </View>
 
