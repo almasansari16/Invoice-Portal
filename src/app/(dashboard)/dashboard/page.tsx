@@ -23,7 +23,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-type Cur = "USD" | "PKR";
+type Cur = "USD" | "PKR" | "EUR";
 
 export default async function DashboardPage({
   searchParams,
@@ -33,8 +33,8 @@ export default async function DashboardPage({
   const session = await getServerSession(authOptions);
   const settings = await prisma.companySettings.findFirst();
   const cur: Cur =
-    searchParams.cur === "USD" || searchParams.cur === "PKR"
-      ? searchParams.cur
+    searchParams.cur === "USD" || searchParams.cur === "PKR" || searchParams.cur === "EUR"
+      ? (searchParams.cur as Cur)
       : ((settings?.defaultCurrency as Cur) || "PKR");
 
   const now = new Date();
@@ -120,7 +120,7 @@ export default async function DashboardPage({
         </div>
         <div className="actions">
           <div className="segmented">
-            {(["PKR", "USD"] as const).map((c) => (
+            {(["PKR", "USD", "EUR"] as const).map((c) => (
               <Link key={c} href={`/dashboard?cur=${c}`} className={cur === c ? "on" : ""}>
                 {c}
               </Link>

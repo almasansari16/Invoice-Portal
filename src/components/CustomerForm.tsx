@@ -28,7 +28,7 @@ export type CustomerData = {
   strn?: string | null;      // STRN (Sales Tax)
   cnic?: string | null;      // CNIC
   defaultPaymentTerms?: string | null;
-  preferredCurrency?: "PKR" | "USD";
+  preferredCurrency?: "PKR" | "USD" | "EUR";
   notes?: string | null;
 };
 
@@ -364,10 +364,11 @@ export default function CustomerForm({ initial }: { initial?: CustomerData }) {
             <select
               className="input"
               value={form.preferredCurrency || "PKR"}
-              onChange={(e) => set("preferredCurrency", e.target.value as "PKR" | "USD")}
+              onChange={(e) => set("preferredCurrency", e.target.value as "PKR" | "USD" | "EUR")}
             >
               <option value="PKR">PKR — Pakistani Rupee (Rs)</option>
               <option value="USD">USD — US Dollar ($)</option>
+              <option value="EUR">EUR — Euro (€)</option>
             </select>
           </div>
 

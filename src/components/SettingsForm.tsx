@@ -141,6 +141,7 @@ export default function SettingsForm({ initial }: { initial: any }) {
             <select className="input" value={form.defaultCurrency} onChange={(e) => set("defaultCurrency", e.target.value)}>
               <option value="PKR">PKR — Pakistani Rupee</option>
               <option value="USD">USD — US Dollar</option>
+              <option value="EUR">EUR — Euro</option>
             </select>
           </div>
           <div className="field span-2" style={{ marginBottom: 0 }}>

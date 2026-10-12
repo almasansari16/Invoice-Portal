@@ -20,7 +20,7 @@ const customerSchema = z.object({
   strn: z.string().optional().nullable(),
   cnic: z.string().optional().nullable(),
   defaultPaymentTerms: z.string().optional().nullable(),
-  preferredCurrency: z.enum(["PKR", "USD"]).optional().default("PKR"),
+  preferredCurrency: z.enum(["PKR", "USD", "EUR"]).optional().default("PKR"),
   notes: z.string().optional().nullable(),
 });
 

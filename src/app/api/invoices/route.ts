@@ -20,7 +20,7 @@ const invoiceSchema = z.object({
   customerId: z.string().min(1),
   invoiceDate: z.string(),
   dueDate: z.string().optional().nullable(),
-  currency: z.enum(["USD", "PKR"]),
+  currency: z.enum(["USD", "PKR", "EUR"]),
   foreignCurrency: z.string().optional().nullable(),
   exchangeRate: z.number().optional().nullable(),
   status: z.enum(["DRAFT", "SENT", "PAID", "OVERDUE", "CANCELLED"]).optional(),

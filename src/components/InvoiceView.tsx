@@ -159,13 +159,14 @@ export default function InvoiceView({ invoice, company }: { invoice: any; compan
             <th style={{ width: 130, padding: "7px 8px", borderRight: "1px solid #000", textAlign: "right" }}>
               Amount({foreignCurrency})
             </th>
-            <th style={{ width: 150, padding: "7px 10px", textAlign: "right" }}>Amount (PKR)</th>
+            <th style={{ width: 150, padding: "7px 10px", textAlign: "right" }}>Amount ({invoice.currency || "PKR"})</th>
           </tr>
         </thead>
         <tbody>
           {invoice.items?.map((item: any, idx: number) => {
             const hasForeign = item.foreignAmount !== null && item.foreignAmount !== undefined && Number(item.foreignAmount) > 0;
             const rateVal = item.rate !== null && item.rate !== undefined && Number(item.rate) > 0 ? Number(item.rate) : null;
+            const curPrefix = invoice.currency === "USD" ? "$ " : invoice.currency === "EUR" ? "€ " : "Rs. ";
 
             return (
               <tr key={item.id || idx} style={{ borderBottom: "1px solid #cbd5e1", minHeight: 28 }}>
@@ -188,7 +189,7 @@ export default function InvoiceView({ invoice, company }: { invoice: any; compan
                     : ""}
                 </td>
                 <td style={{ padding: "7px 10px", textAlign: "right", fontWeight: 700 }}>
-                  Rs. {new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(Number(item.amount) || 0)}
+                  {curPrefix}{new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(item.amount) || 0)}
                 </td>
               </tr>
             );
@@ -211,7 +212,7 @@ export default function InvoiceView({ invoice, company }: { invoice: any; compan
               Total
             </td>
             <td style={{ padding: "9px 10px", textAlign: "right", fontWeight: 800, fontSize: 13.5 }}>
-              Rs. {new Intl.NumberFormat("en-US").format(Math.round(Number(invoice.total)))}
+              {(invoice.currency === "USD" ? "$ " : invoice.currency === "EUR" ? "€ " : "Rs. ")}{new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(invoice.total) || 0)}
             </td>
           </tr>
         </tbody>

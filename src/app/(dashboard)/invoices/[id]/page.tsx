@@ -18,7 +18,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
 
   const company = await prisma.companySettings.findFirst();
 
-  const cur = invoice.currency as "USD" | "PKR";
+  const cur = invoice.currency as "USD" | "PKR" | "EUR";
   const total = Number(invoice.total);
   const paid = Number(invoice.amountPaid);
   const balance = Math.max(total - paid, 0);

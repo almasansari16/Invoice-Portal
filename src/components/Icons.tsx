@@ -46,6 +46,7 @@ export const IconCheckCircle = make(<><circle cx="12" cy="12" r="9" /><path d="m
 export const IconSparkles = make(<><path d="M9.94 14.06 8 20l-1.94-5.94L0 12l6.06-1.94L8 4l1.94 6.06L16 12z" transform="translate(2 -1) scale(.9)" /><path d="M20 3v4M22 5h-4" /></>);
 export const IconArrowRight = make(<path d="M5 12h14m-6-6 6 6-6 6" />);
 export const IconArrowLeft = make(<path d="M19 12H5m6 6-6-6 6-6" />);
+export const IconChevronLeft = make(<path d="m15 18-6-6 6-6" />);
 export const IconChevronRight = make(<path d="m9 18 6-6-6-6" />);
 export const IconMapPin = make(<><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>);
 export const IconMail = make(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>);

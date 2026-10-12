@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
 function fmtMoney(amount: number | string | null | undefined) {
   if (amount === null || amount === undefined || amount === "") return "";
   const v = Number(amount);
-  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(v);
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 }
 
 export type InvoicePdfProps = {
@@ -250,6 +250,8 @@ export type InvoicePdfProps = {
 export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
   const isAir = (invoice.shipmentMode || "").toLowerCase().includes("air");
   const foreignCurrency = invoice.foreignCurrency || "USD";
+  const baseCurrency = invoice.currency || "PKR";
+  const curSymbol = baseCurrency === "USD" ? "$ " : baseCurrency === "EUR" ? "€ " : "Rs. ";
   const exRate = Number(invoice.exchangeRate) || 0;
   const inWords = numberToWordsRupees(invoice.total);
 
@@ -414,7 +416,7 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
               <Text style={[styles.th, { textAlign: "right" }]}>Amount({foreignCurrency})</Text>
             </View>
             <View style={[styles.colPkr, styles.thCell]}>
-              <Text style={[styles.th, { textAlign: "right" }]}>Amount (PKR)</Text>
+              <Text style={[styles.th, { textAlign: "right" }]}>Amount ({baseCurrency})</Text>
             </View>
           </View>
 
@@ -444,7 +446,7 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
                 </View>
                 <View style={[styles.colPkr, styles.tdCell]}>
                   <Text style={[styles.td, { textAlign: "right", fontWeight: 700 }]}>
-                    Rs. {fmtMoney(item.amount)}
+                    {curSymbol}{fmtMoney(item.amount)}
                   </Text>
                 </View>
               </View>
@@ -469,7 +471,7 @@ export function InvoiceDocument({ invoice, company }: InvoicePdfProps) {
             </View>
             <View style={styles.totalValCell}>
               <Text style={styles.totalVal}>
-                Rs. {new Intl.NumberFormat("en-US").format(Math.round(Number(invoice.total)))}
+                {curSymbol}{new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(invoice.total) || 0)}
               </Text>
             </View>
           </View>

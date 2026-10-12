@@ -38,7 +38,7 @@ type Customer = {
   strn?: string | null;
   cnic?: string | null;
   defaultPaymentTerms?: string | null;
-  preferredCurrency?: "PKR" | "USD";
+  preferredCurrency?: "PKR" | "USD" | "EUR";
 };
 
 export type FreightLineItem = {
@@ -57,7 +57,7 @@ export type InvoiceInitial = {
   customerId?: string;
   invoiceDate?: string;
   dueDate?: string | null;
-  currency?: "USD" | "PKR";
+  currency?: "USD" | "PKR" | "EUR";
   foreignCurrency?: string | null;
   exchangeRate?: number | null;
   status?: string;
@@ -140,7 +140,7 @@ export default function InvoiceForm({
 }: {
   customers: Customer[];
   initial?: InvoiceInitial;
-  defaultCurrency?: "USD" | "PKR";
+  defaultCurrency?: "USD" | "PKR" | "EUR";
 }) {
   const router = useRouter();
   const isEdit = Boolean(initial?.id);
@@ -151,7 +151,7 @@ export default function InvoiceForm({
     initial?.invoiceDate?.slice(0, 10) || isoDay(new Date())
   );
   const [dueDate, setDueDate] = useState(initial?.dueDate?.slice(0, 10) || "");
-  const [currency, setCurrency] = useState<"USD" | "PKR">(initial?.currency || defaultCurrency);
+  const [currency, setCurrency] = useState<"USD" | "PKR" | "EUR">(initial?.currency || defaultCurrency);
   const [foreignCurrency, setForeignCurrency] = useState<string>(initial?.foreignCurrency || "USD");
   const [exchangeRate, setExchangeRate] = useState(initial?.exchangeRate?.toString() || "326.00");
   const [status, setStatus] = useState(initial?.status || "DRAFT");
@@ -597,7 +597,16 @@ export default function InvoiceForm({
               </div>
             </div>
 
-            <div className="grid-2" style={{ marginTop: 10 }}>
+            <div className="grid-3" style={{ marginTop: 10 }}>
+              <div className="field">
+                <label>Base Currency</label>
+                <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value as any)}>
+                  <option value="PKR">PKR (Rs)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
+
               <div className="field">
                 <label>Foreign Currency</label>
                 <select className="input" value={foreignCurrency} onChange={(e) => setForeignCurrency(e.target.value)}>
@@ -610,7 +619,7 @@ export default function InvoiceForm({
               </div>
 
               <div className="field">
-                <label>Ex. Rate (PKR per {foreignCurrency})</label>
+                <label>Ex. Rate ({currency} per {foreignCurrency})</label>
                 <input
                   className="input num"
                   type="number"
@@ -925,7 +934,7 @@ export default function InvoiceForm({
                 <IconPlus size={14} /> Add charge line
               </button>
               <span className="muted" style={{ fontSize: 13 }}>
-                Total (PKR): <b className="num" style={{ color: "var(--ink)", fontSize: 15 }}>{formatCurrency(totals.total, "PKR")}</b>
+                Total ({currency}): <b className="num" style={{ color: "var(--ink)", fontSize: 15 }}>{formatCurrency(totals.total, currency)}</b>
               </span>
             </div>
           </div>
@@ -965,8 +974,8 @@ export default function InvoiceForm({
             </div>
 
             <div className="summary-total" style={{ margin: "14px 0" }}>
-              <div className="lbl">Total (PKR)</div>
-              <div className="amt" style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totals.total, "PKR")}</div>
+              <div className="lbl">Total ({currency})</div>
+              <div className="amt" style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totals.total, currency)}</div>
             </div>
 
             {/* IN WORDS DISPLAY */}

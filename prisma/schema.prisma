@@ -19,6 +19,7 @@ enum Role {
 enum Currency {
   USD
   PKR
+  EUR
 }
 
 enum InvoiceStatus {

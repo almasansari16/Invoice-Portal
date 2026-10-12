@@ -1,6 +1,6 @@
-export function formatCurrency(amount: number | string, currency: "USD" | "PKR") {
+export function formatCurrency(amount: number | string, currency: "USD" | "PKR" | "EUR" | string) {
   const value = typeof amount === "string" ? parseFloat(amount) : amount;
-  const symbol = currency === "USD" ? "$" : "Rs";
+  const symbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : "Rs";
   const formatted = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -73,8 +73,8 @@ export const STATUS_TONES: Record<string, { bg: string; fg: string }> = {
   CANCELLED: { bg: "#f8fafc", fg: "#94a3b8" },
 };
 
-export function formatCompact(amount: number, currency: "USD" | "PKR") {
-  const symbol = currency === "USD" ? "$" : "Rs";
+export function formatCompact(amount: number, currency: "USD" | "PKR" | "EUR") {
+  const symbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : "Rs";
   const formatted = new Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: 1,

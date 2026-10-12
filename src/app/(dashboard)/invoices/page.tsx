@@ -3,6 +3,8 @@ import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/utils";
 import Link from "next/link";
 import { Avatar, EmptyState, StatusBadge } from "@/components/ui";
 import {
+  IconChevronLeft,
+  IconChevronRight,
   IconDownload,
   IconFilter,
   IconInvoice,
@@ -18,9 +20,11 @@ export const dynamic = "force-dynamic";
 export default async function InvoicesPage({
   searchParams,
 }: {
-  searchParams: { q?: string; status?: string; currency?: string; from?: string; to?: string };
+  searchParams: { q?: string; status?: string; currency?: string; from?: string; to?: string; page?: string; pageSize?: string };
 }) {
   const { q, status, currency, from, to } = searchParams;
+  const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
+  const pageSize = Math.max(1, Math.min(100, parseInt(searchParams.pageSize || "25", 10) || 25));
 
   // filters shared by the list and the status tab counts (status itself excluded)
   const base: any[] = [];
@@ -51,13 +55,15 @@ export default async function InvoicesPage({
   const where: any = { AND: status ? [...base, { status }] : base };
   if (where.AND.length === 0) delete where.AND;
 
-  const [invoices, statusCounts] = await Promise.all([
+  const [invoices, totalCount, statusCounts] = await Promise.all([
     prisma.invoice.findMany({
       where,
       orderBy: [{ invoiceDate: "desc" }, { createdAt: "desc" }],
       include: { customer: { select: { name: true, company: true } } },
-      take: 200,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
+    prisma.invoice.count({ where }),
     prisma.invoice.groupBy({
       by: ["status"],
       where: base.length ? { AND: base } : {},
@@ -65,6 +71,7 @@ export default async function InvoicesPage({
     }),
   ]);
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const allCount = statusCounts.reduce((a, s) => a + s._count._all, 0);
   const countFor = (s: string) => statusCounts.find((x) => x.status === s)?._count._all || 0;
 
@@ -73,9 +80,18 @@ export default async function InvoicesPage({
   ).toString();
 
   const tabHref = (s?: string) => {
-    const p = new URLSearchParams(Object.entries(searchParams).filter(([k, v]) => v && k !== "status") as any);
+    const p = new URLSearchParams(Object.entries(searchParams).filter(([k, v]) => v && k !== "status" && k !== "page") as any);
     if (s) p.set("status", s);
     const str = p.toString();
+    return `/invoices${str ? `?${str}` : ""}`;
+  };
+
+  const pageHref = (p: number) => {
+    const params = new URLSearchParams(
+      Object.entries(searchParams).filter(([k, v]) => v && k !== "page") as any
+    );
+    if (p > 1) params.set("page", String(p));
+    const str = params.toString();
     return `/invoices${str ? `?${str}` : ""}`;
   };
 
@@ -124,8 +140,9 @@ export default async function InvoicesPage({
           </div>
           <select className="input" name="currency" defaultValue={currency || ""} style={{ width: 140 }}>
             <option value="">All currencies</option>
-            <option value="USD">USD</option>
             <option value="PKR">PKR</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
           </select>
           <input className="input" type="date" name="from" defaultValue={from} style={{ width: 150 }} title="From date" />
           <input className="input" type="date" name="to" defaultValue={to} style={{ width: 150 }} title="To date" />
@@ -222,10 +239,90 @@ export default async function InvoicesPage({
             </table>
           </div>
         )}
-        {invoices.length > 0 && (
-          <div style={{ padding: "12px 22px", borderTop: "1px solid var(--line-soft)", fontSize: 12.5 }} className="muted">
-            Showing {invoices.length} invoice{invoices.length === 1 ? "" : "s"}
-            {invoices.length === 200 && " (first 200 — refine filters to see more)"}
+        {totalCount > 0 && (
+          <div
+            style={{
+              padding: "14px 22px",
+              borderTop: "1px solid var(--line-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 12,
+              fontSize: 13,
+            }}
+          >
+            <div className="muted">
+              Showing{" "}
+              <b style={{ color: "var(--ink)" }}>
+                {Math.min((page - 1) * pageSize + 1, totalCount)}–
+                {Math.min(page * pageSize, totalCount)}
+              </b>{" "}
+              of <b style={{ color: "var(--ink)" }}>{totalCount}</b> invoice{totalCount === 1 ? "" : "s"}
+            </div>
+
+            {totalPages > 1 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {page > 1 ? (
+                  <Link href={pageHref(page - 1)} className="btn btn-secondary btn-sm" style={{ padding: "6px 11px", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <IconChevronLeft size={14} /> Previous
+                  </Link>
+                ) : (
+                  <button disabled className="btn btn-secondary btn-sm" style={{ padding: "6px 11px", display: "inline-flex", alignItems: "center", gap: 5, opacity: 0.45, cursor: "not-allowed" }}>
+                    <IconChevronLeft size={14} /> Previous
+                  </button>
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                    .reduce((acc: (number | string)[], p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                        acc.push(`dots-${p}`);
+                      }
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((item) => {
+                      if (typeof item === "string") {
+                        return (
+                          <span key={item} style={{ padding: "0 5px", color: "var(--muted)", fontWeight: 700 }}>
+                            …
+                          </span>
+                        );
+                      }
+                      const isCurrent = item === page;
+                      return (
+                        <Link
+                          key={item}
+                          href={pageHref(item)}
+                          className={isCurrent ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+                          style={{
+                            minWidth: 32,
+                            height: 32,
+                            padding: 0,
+                            display: "grid",
+                            placeItems: "center",
+                            fontWeight: isCurrent ? 700 : 500,
+                          }}
+                        >
+                          {item}
+                        </Link>
+                      );
+                    })}
+                </div>
+
+                {page < totalPages ? (
+                  <Link href={pageHref(page + 1)} className="btn btn-secondary btn-sm" style={{ padding: "6px 11px", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    Next <IconChevronRight size={14} />
+                  </Link>
+                ) : (
+                  <button disabled className="btn btn-secondary btn-sm" style={{ padding: "6px 11px", display: "inline-flex", alignItems: "center", gap: 5, opacity: 0.45, cursor: "not-allowed" }}>
+                    Next <IconChevronRight size={14} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

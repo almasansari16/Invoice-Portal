@@ -25,7 +25,7 @@ export default async function EditInvoicePage({ params }: { params: { id: string
     customerId: invoice.customerId,
     invoiceDate: invoice.invoiceDate.toISOString(),
     dueDate: invoice.dueDate?.toISOString() || null,
-    currency: invoice.currency as "USD" | "PKR",
+    currency: invoice.currency as "USD" | "PKR" | "EUR",
     foreignCurrency: (invoice as any).foreignCurrency || "USD",
     exchangeRate: invoice.exchangeRate ? Number(invoice.exchangeRate) : null,
     status: invoice.status,

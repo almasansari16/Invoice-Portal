@@ -33,7 +33,7 @@ export default async function NewInvoicePage({
       <InvoiceForm
         customers={customers}
         initial={{ customerId: searchParams.customerId }}
-        defaultCurrency={(settings?.defaultCurrency as "USD" | "PKR") || "PKR"}
+        defaultCurrency={(settings?.defaultCurrency as "USD" | "PKR" | "EUR") || "PKR"}
       />
     </div>
   );
