@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import InvoiceForm from "@/components/InvoiceForm";
 import { IconChevronRight } from "@/components/Icons";
+import { generateInvoiceNumber } from "@/lib/invoice-number";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,12 @@ export default async function NewInvoicePage({
 }: {
   searchParams: { customerId?: string };
 }) {
-  const [customers, settings] = await Promise.all([
+  const [customers, settings, initialInvoiceNumber] = await Promise.all([
     prisma.customer.findMany({
       orderBy: { name: "asc" },
     }),
     prisma.companySettings.findFirst({ select: { defaultCurrency: true } }),
+    generateInvoiceNumber("Air"),
   ]);
 
   return (
@@ -32,7 +34,7 @@ export default async function NewInvoicePage({
       </div>
       <InvoiceForm
         customers={customers}
-        initial={{ customerId: searchParams.customerId }}
+        initial={{ customerId: searchParams.customerId, invoiceNumber: initialInvoiceNumber, shipmentMode: "Air" }}
         defaultCurrency={(settings?.defaultCurrency as "USD" | "PKR" | "EUR") || "PKR"}
       />
     </div>

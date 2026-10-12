@@ -224,9 +224,33 @@ export default function InvoiceForm({
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [loadingNumber, setLoadingNumber] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const customer = customers.find((c) => c.id === customerId);
+
+  async function fetchNextNumber(mode: string) {
+    try {
+      setLoadingNumber(true);
+      const res = await fetch(`/api/invoices/next-number?mode=${encodeURIComponent(mode)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.invoiceNumber) {
+          setInvoiceNumber(data.invoiceNumber);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to auto-generate invoice number", e);
+    } finally {
+      setLoadingNumber(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!isEdit && !invoiceNumber) {
+      fetchNextNumber(shipmentMode);
+    }
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -344,7 +368,7 @@ export default function InvoiceForm({
   }
 
   function resetForm() {
-    setInvoiceNumber("");
+    fetchNextNumber("Air");
     setCustomerId("");
     setInvoiceDate(isoDay(new Date()));
     setDueDate("");
@@ -556,12 +580,45 @@ export default function InvoiceForm({
             <div className="grid-2">
               <div className="field">
                 <label>Bill No / Invoice No</label>
-                <input
-                  className="input mono"
-                  placeholder={shipmentMode === "Sea" ? "e.g. SF-7860259" : "e.g. AF-7860256"}
-                  value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    className="input mono"
+                    placeholder={
+                      shipmentMode.toLowerCase().includes("sea")
+                        ? "e.g. SF-7860259"
+                        : shipmentMode.toLowerCase().includes("road")
+                        ? "e.g. RF-7860001"
+                        : "e.g. AF-7860256"
+                    }
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    style={{ paddingRight: 75 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{
+                      position: "absolute",
+                      right: 4,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      padding: "3px 8px",
+                      fontSize: 11,
+                      height: 28,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      borderRadius: 6,
+                      color: "var(--brand)",
+                    }}
+                    onClick={() => fetchNextNumber(shipmentMode)}
+                    disabled={loadingNumber}
+                    title="Auto generate next number for selected transport type"
+                  >
+                    <IconRefresh size={12} className={loadingNumber ? "spin" : ""} />
+                    {loadingNumber ? "..." : "Auto"}
+                  </button>
+                </div>
               </div>
 
               <div className="field">
@@ -575,9 +632,7 @@ export default function InvoiceForm({
                       className={shipmentMode.toLowerCase() === m.value.toLowerCase() ? "on" : ""}
                       onClick={() => {
                         setShipmentMode(m.value);
-                        if (!invoiceNumber || invoiceNumber.startsWith("AF-") || invoiceNumber.startsWith("SF-")) {
-                          setInvoiceNumber(m.value === "Sea" ? "SF-" : "AF-");
-                        }
+                        fetchNextNumber(m.value);
                       }}
                     >
                       {m.icon} {m.label}

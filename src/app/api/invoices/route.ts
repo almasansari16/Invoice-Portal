@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     let invoiceNumber = data.invoiceNumber?.trim();
     if (!invoiceNumber) {
-      invoiceNumber = await generateInvoiceNumber();
+      invoiceNumber = await generateInvoiceNumber(data.shipmentMode);
     } else {
       // Check if invoiceNumber already exists to avoid unique constraint crash
       const existing = await prisma.invoice.findUnique({ where: { invoiceNumber } });
