@@ -17,7 +17,11 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: params.id },
-    include: { items: { orderBy: { sortOrder: "asc" } }, customer: true },
+    include: {
+      items: { orderBy: { sortOrder: "asc" } },
+      customer: true,
+      createdBy: { select: { id: true, name: true, email: true } },
+    },
   });
   if (!invoice) notFound();
 
@@ -57,6 +61,9 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
               {invoice.customer.company || invoice.customer.name}
             </Link>{" "}
             on {formatDate(invoice.invoiceDate)}
+            {invoice.createdBy && (
+              <> &bull; Created by <b>{invoice.createdBy.name}</b></>
+            )}
           </p>
         </div>
         <InvoiceActions invoiceId={invoice.id} status={invoice.status} />

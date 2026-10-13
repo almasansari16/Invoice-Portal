@@ -147,10 +147,15 @@ export async function POST(req: NextRequest) {
     if (!invoiceNumber) {
       invoiceNumber = await generateInvoiceNumber(data.shipmentMode);
     } else {
-      // Check if invoiceNumber already exists to avoid unique constraint crash
+      // Check if invoiceNumber already exists
       const existing = await prisma.invoice.findUnique({ where: { invoiceNumber } });
       if (existing) {
-        invoiceNumber = `${invoiceNumber}-${Date.now().toString().slice(-4)}`;
+        return NextResponse.json(
+          {
+            error: `Bill No "${invoiceNumber}" is already in use by another invoice. Please choose a different number or use the Auto button.`,
+          },
+          { status: 400 }
+        );
       }
     }
 
