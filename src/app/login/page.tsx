@@ -68,7 +68,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div style={{ fontSize: 12, color: "#64748b" }}>© {new Date().getFullYear()} Invoicing System</div>
+        <div style={{ fontSize: 12, color: "#64748b" }}>© {new Date().getFullYear()} Invoicing System By MSTech</div>
       </div>
 
       <div className="auth-form">
