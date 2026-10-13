@@ -6,6 +6,8 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
 import React from "react";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -18,6 +20,12 @@ export async function GET(
     include: { items: { orderBy: { sortOrder: "asc" } }, customer: true },
   });
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+  if (!isAdmin && invoice.createdById !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const company = await prisma.companySettings.findFirst();
 

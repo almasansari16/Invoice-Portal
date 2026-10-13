@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { IconAlert, IconArrowRight, IconLock, IconMail, IconShip } from "@/components/Icons";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,23 +12,29 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      if (!res || res.error) {
+        setError("Invalid email or password");
+        setLoading(false);
+        return;
+      }
 
-    if (res?.error) {
-      setError("Invalid email or password");
-      return;
+      // Full page redirect ensures the session cookie is sent with the request headers immediately
+      window.location.replace("/dashboard");
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (

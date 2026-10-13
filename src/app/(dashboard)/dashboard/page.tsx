@@ -31,6 +31,10 @@ export default async function DashboardPage({
   searchParams: { cur?: string };
 }) {
   const session = await getServerSession(authOptions);
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
+  const userId = (session?.user as any)?.id;
+  const userFilter = isAdmin ? {} : { createdById: userId };
+
   const settings = await prisma.companySettings.findFirst();
   const cur: Cur =
     searchParams.cur === "USD" || searchParams.cur === "PKR" || searchParams.cur === "EUR"
@@ -40,31 +44,47 @@ export default async function DashboardPage({
   const now = new Date();
   const chartStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [totalCustomers, byStatus, recentInvoices, periodInvoices, topGroups] = await Promise.all([
+  const [totalCustomers, byStatus, recentInvoices, periodInvoices, topGroups, userCounts] = await Promise.all([
     prisma.customer.count(),
     prisma.invoice.groupBy({
       by: ["status"],
-      where: { currency: cur },
+      where: { currency: cur, ...userFilter },
       _sum: { total: true, amountPaid: true },
       _count: { _all: true },
     }),
     prisma.invoice.findMany({
+      where: userFilter,
       orderBy: [{ invoiceDate: "desc" }, { createdAt: "desc" }],
       take: 6,
-      include: { customer: { select: { name: true, company: true } } },
+      include: {
+        customer: { select: { name: true, company: true } },
+        createdBy: { select: { name: true } },
+      },
     }),
     prisma.invoice.findMany({
-      where: { currency: cur, invoiceDate: { gte: chartStart }, status: { not: "CANCELLED" } },
+      where: { currency: cur, invoiceDate: { gte: chartStart }, status: { not: "CANCELLED" }, ...userFilter },
       select: { invoiceDate: true, total: true, amountPaid: true },
     }),
     prisma.invoice.groupBy({
       by: ["customerId"],
-      where: { currency: cur, status: { not: "CANCELLED" } },
+      where: { currency: cur, status: { not: "CANCELLED" }, ...userFilter },
       _sum: { total: true },
       _count: { _all: true },
       orderBy: { _sum: { total: "desc" } },
       take: 5,
     }),
+    isAdmin
+      ? prisma.user.findMany({
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            _count: { select: { invoices: true } },
+          },
+          orderBy: { invoices: { _count: "desc" } },
+        })
+      : Promise.resolve([]),
   ]);
 
   const topCustomers = await prisma.customer.findMany({
@@ -347,6 +367,74 @@ export default async function DashboardPage({
             })}
           </div>
         </div>
+
+        {/* Team Invoicing Counts (Admin Only) */}
+        {isAdmin && userCounts.length > 0 && (
+          <div className="card span-2">
+            <div className="card-head">
+              <div>
+                <h3>Team Invoicing Counts</h3>
+                <p>Summary of total invoices created by each user account</p>
+              </div>
+              <Link href="/users" className="btn btn-ghost btn-sm">
+                User Management <IconArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="card-pad" style={{ paddingTop: 8 }}>
+              <div className="grid-2">
+                {userCounts.map((u) => {
+                  const userInvoiceCount = u._count.invoices;
+                  const maxUserInvoices = Math.max(...userCounts.map((x) => x._count.invoices), 1);
+                  return (
+                    <div
+                      key={u.id}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 10,
+                        background: "var(--paper-sunken)",
+                        border: "1px solid var(--line-soft)",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <Avatar name={u.name} size="sm" />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontWeight: 600, fontSize: 13.5 }}>{u.name}</span>
+                            {u.role === "ADMIN" ? (
+                              <span className="tag" style={{ fontSize: 9.5, padding: "0 4px", background: "#ede9fe", color: "#6d28d9" }}>
+                                Admin
+                              </span>
+                            ) : (
+                              <span className="tag" style={{ fontSize: 9.5, padding: "0 4px", background: "#ecfdf5", color: "#047857" }}>
+                                Staff
+                              </span>
+                            )}
+                          </div>
+                          <div className="mono" style={{ fontSize: 11.5, color: "var(--muted)" }}>{u.email}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span className="num" style={{ fontWeight: 700, fontSize: 17, color: "var(--brand)" }}>
+                            {userInvoiceCount}
+                          </span>
+                          <div className="muted" style={{ fontSize: 11 }}>invoices</div>
+                        </div>
+                      </div>
+                      <div className="bar" style={{ height: 6 }}>
+                        <span
+                          style={{
+                            width: `${(userInvoiceCount / maxUserInvoices) * 100}%`,
+                            background: u.role === "ADMIN" ? "linear-gradient(90deg, #6d28d9, #8b5cf6)" : "var(--brand)",
+                            borderRadius: 100,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

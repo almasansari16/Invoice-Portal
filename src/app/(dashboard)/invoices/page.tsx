@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/utils";
 import Link from "next/link";
 import { Avatar, EmptyState, StatusBadge } from "@/components/ui";
@@ -22,12 +25,24 @@ export default async function InvoicesPage({
 }: {
   searchParams: { q?: string; status?: string; currency?: string; from?: string; to?: string; page?: string; pageSize?: string };
 }) {
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/login");
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+
   const { q, status, currency, from, to } = searchParams;
   const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
   const pageSize = Math.max(1, Math.min(100, parseInt(searchParams.pageSize || "25", 10) || 25));
 
   // filters shared by the list and the status tab counts (status itself excluded)
   const base: any[] = [];
+
+  // Staff members can only see their own invoices
+  if (!isAdmin) {
+    base.push({ createdById: userId });
+  }
+
   if (q) {
     base.push({
       OR: [
@@ -59,7 +74,10 @@ export default async function InvoicesPage({
     prisma.invoice.findMany({
       where,
       orderBy: [{ invoiceDate: "desc" }, { createdAt: "desc" }],
-      include: { customer: { select: { name: true, company: true } } },
+      include: {
+        customer: { select: { name: true, company: true } },
+        createdBy: { select: { id: true, name: true } },
+      },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -191,8 +209,13 @@ export default async function InvoicesPage({
                         <Link href={`/invoices/${inv.id}`} className="link mono">
                           {inv.invoiceNumber}
                         </Link>
-                        <div className="sub">
+                        <div className="sub" style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 2 }}>
                           <span className="tag" style={{ fontSize: 10, padding: "0 5px" }}>{inv.currency}</span>
+                          {isAdmin && inv.createdBy?.name && (
+                            <span className="tag" style={{ fontSize: 10, padding: "0 5px", background: "var(--brand-soft)", color: "var(--brand)", borderColor: "transparent" }}>
+                              By {inv.createdBy.name}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td>

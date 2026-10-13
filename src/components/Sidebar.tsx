@@ -7,9 +7,11 @@ import { Avatar } from "@/components/ui";
 import {
   IconDashboard,
   IconInvoice,
+  IconKey,
   IconLogout,
   IconPlus,
   IconSettings,
+  IconShield,
   IconShip,
   IconUsers,
 } from "@/components/Icons";
@@ -20,12 +22,21 @@ const links = [
   { href: "/customers", label: "Customers", icon: IconUsers },
 ];
 
-const adminLinks = [{ href: "/settings", label: "Company Settings", icon: IconSettings }];
+const adminLinks = [
+  { href: "/users", label: "User Management", icon: IconShield },
+  { href: "/settings", label: "Company Settings", icon: IconSettings },
+];
+
+const accountLinks = [
+  { href: "/profile", label: "Account & Password", icon: IconKey },
+];
 
 export default function Sidebar({ userName, role }: { userName: string; role: string }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
     pathname === href || (pathname.startsWith(href + "/") && !pathname.startsWith("/invoices/new"));
+
+  const isAdmin = role === "ADMIN";
 
   return (
     <aside className="sidebar no-print">
@@ -53,9 +64,16 @@ export default function Sidebar({ userName, role }: { userName: string; role: st
         ))}
       </nav>
 
-      <div className="nav-label">Configuration</div>
+      <div className="nav-label">Settings &amp; Access</div>
       <nav>
-        {adminLinks.map(({ href, label, icon: Icon }) => (
+        {isAdmin &&
+          adminLinks.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className={isActive(href) ? "active" : ""}>
+              <Icon size={17} />
+              {label}
+            </Link>
+          ))}
+        {accountLinks.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={isActive(href) ? "active" : ""}>
             <Icon size={17} />
             {label}
@@ -64,11 +82,13 @@ export default function Sidebar({ userName, role }: { userName: string; role: st
       </nav>
 
       <div className="footer">
-        <Avatar name={userName} size="sm" />
-        <div className="who">
-          <b>{userName}</b>
-          <span>{role === "ADMIN" ? "Administrator" : "Staff"}</span>
-        </div>
+        <Link href="/profile" title="View profile & change password" style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0, textDecoration: "none" }}>
+          <Avatar name={userName} size="sm" />
+          <div className="who">
+            <b>{userName}</b>
+            <span>{isAdmin ? "Administrator" : "Staff"}</span>
+          </div>
+        </Link>
         <button
           className="signout"
           title="Sign out"

@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect, notFound } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Avatar, EmptyState, StatusBadge } from "@/components/ui";
 import {
   IconBuilding,
@@ -18,10 +20,17 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function CustomerDetailPage({ params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/login");
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+
   const customer = await prisma.customer.findUnique({
     where: { id: params.id },
     include: {
       invoices: {
+        where: isAdmin ? {} : { createdById: userId },
         orderBy: { invoiceDate: "desc" },
       },
     },

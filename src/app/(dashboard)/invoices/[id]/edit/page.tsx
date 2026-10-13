@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import InvoiceForm from "@/components/InvoiceForm";
 import { IconChevronRight } from "@/components/Icons";
@@ -7,6 +9,9 @@ import { IconChevronRight } from "@/components/Icons";
 export const dynamic = "force-dynamic";
 
 export default async function EditInvoicePage({ params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/login");
+
   const [invoice, customers] = await Promise.all([
     prisma.invoice.findUnique({
       where: { id: params.id },
@@ -18,6 +23,12 @@ export default async function EditInvoicePage({ params }: { params: { id: string
   ]);
 
   if (!invoice) notFound();
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+  if (!isAdmin && invoice.createdById !== userId) {
+    notFound();
+  }
 
   const initial = {
     id: invoice.id,

@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ExcelJS from "exceljs";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,6 +19,13 @@ export async function GET(req: NextRequest) {
   const to = searchParams.get("to");
 
   const where: any = { AND: [] as any[] };
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+  if (!isAdmin) {
+    where.AND.push({ createdById: userId });
+  }
+
   if (q) {
     where.AND.push({
       OR: [

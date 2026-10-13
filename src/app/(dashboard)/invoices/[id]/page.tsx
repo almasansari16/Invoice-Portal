@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import InvoiceActions from "@/components/InvoiceActions";
 import InvoiceView from "@/components/InvoiceView";
@@ -10,11 +12,20 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/login");
+
   const invoice = await prisma.invoice.findUnique({
     where: { id: params.id },
     include: { items: { orderBy: { sortOrder: "asc" } }, customer: true },
   });
   if (!invoice) notFound();
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+  if (!isAdmin && invoice.createdById !== userId) {
+    notFound();
+  }
 
   const company = await prisma.companySettings.findFirst();
 

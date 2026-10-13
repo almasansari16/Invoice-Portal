@@ -76,6 +76,13 @@ export async function GET(req: NextRequest) {
 
   const where: any = { AND: [] as any[] };
 
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = (session.user as any).id;
+
+  if (!isAdmin) {
+    where.AND.push({ createdById: userId });
+  }
+
   if (q) {
     where.AND.push({
       OR: [
@@ -106,7 +113,10 @@ export async function GET(req: NextRequest) {
       orderBy: { invoiceDate: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { customer: { select: { id: true, name: true, company: true } } },
+      include: {
+        customer: { select: { id: true, name: true, company: true } },
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
     }),
     prisma.invoice.count({ where }),
   ]);
